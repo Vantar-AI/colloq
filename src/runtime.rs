@@ -1243,6 +1243,8 @@ impl Transport for QuicTransport {
         }
         let send = &mut self.send;
         let receive = &mut self.receive;
+        // Both roles publish their FIN before waiting for the peer's FIN. Reversing this order can
+        // leave them waiting until QUIC's idle timeout under scheduler pressure.
         match role {
             "client" => {
                 self.runtime
@@ -1265,14 +1267,13 @@ impl Transport for QuicTransport {
                         read_quic_close_marker(receive).await?;
                         send.write_all(&0_u32.to_be_bytes())
                             .await
-                            .map_err(|error| error.to_string())?;
-                        receive
-                            .read_to_end(0)
-                            .await
                             .map_err(|error| error.to_string())
                     })
                     .map_err(RuntimeError::Quic)?;
                 send.finish()
+                    .map_err(|error| RuntimeError::Quic(error.to_string()))?;
+                self.runtime
+                    .block_on(receive.read_to_end(0))
                     .map_err(|error| RuntimeError::Quic(error.to_string()))?;
             }
             role => {
