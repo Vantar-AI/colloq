@@ -6,7 +6,7 @@
 
 **The graph is the program.** Compile computation, communication, placement, and evolution into one executable plan.
 
-[RFC-0002: Conversation](rfcs/0002-conversation-is-the-computation.md) · [RFC-0001: Kernel](rfcs/0001-eve-language-kernel.md) · [Substrates](docs/substrates.md) · [Plan](docs/plan.md) · [Wire](docs/wire.md) · [Runtime](docs/runtime.md) · [Benchmark](docs/benchmark.md) · [Vision](docs/vision.md) · [Architecture](docs/architecture.md) · [Roadmap](docs/roadmap.md)
+[RFC-0002: Conversation](rfcs/0002-conversation-is-the-computation.md) · [RFC-0001: Kernel](rfcs/0001-eve-language-kernel.md) · [Substrates](docs/substrates.md) · [Two-node](docs/two-node.md) · [Plan](docs/plan.md) · [Wire](docs/wire.md) · [Runtime](docs/runtime.md) · [Benchmark](docs/benchmark.md) · [Vision](docs/vision.md) · [Architecture](docs/architecture.md) · [Roadmap](docs/roadmap.md)
 
 </div>
 
@@ -97,14 +97,22 @@ cargo run -- demo --transport quic --tokens 3
 # Execute it over mutually authenticated Iroh peers
 cargo run -- demo --transport iroh --tokens 3
 
+# Create persistent identities and exact peer/role/plan authorization
+cargo run -- bootstrap-two-node --out build/two-node
+
+# Run authenticated Eve endpoints as independent operating-system processes
+cargo run -- serve-iroh --listen 127.0.0.1:7880
+cargo run -- connect-iroh --server build/two-node/server.eveendpoint.json
+
 # Create, structurally edit, and safely promote an Automerge-backed draft
 cargo run -- draft-create examples/generate.eveconv.json
 cargo run -- draft-patch build/generate.evedraft \
   --pointer /module/semantic_version --value '"0.2.0"'
 cargo run -- draft-promote build/generate.evedraft
 
-# Emit a Miren manifest and pinned container for a multi-node testbed
+# Emit a Miren manifest for either TCP or authenticated Iroh/UDP
 cargo run -- emit-miren examples/generate.eveconv.json
+cargo run -- emit-miren examples/generate.eveconv.json --transport iroh --port 7880
 
 # Give each endpoint its honest local view of an asymmetric failure
 cargo run -- fault-demo --fault-role server \
@@ -124,7 +132,7 @@ Projection produces `build/endpoints/client.endpoint.json` and `server.endpoint.
 
 The invalid trace in `examples/traces/generate-wrong-order.invalid.json` demonstrates the central property: a `token` message has the correct data type, but Eve rejects it when the server has not first selected the `token` conversation branch.
 
-The runtime derives both endpoints from the same graph. Reference envelopes carry the experimental SHA-256 semantic identity, expected state, and monotonic sequence. The compact path establishes those semantics from the verified plan, then sends only a transition ID, sequence, and optional payload. TCP, QUIC, and Iroh peers first exchange a fail-closed session preface that binds the version, conversation, plan, roles, and exact encoding. Iroh additionally binds the authenticated endpoint identities and concrete TLS connection. A demo reports whether both roles observed the same semantic trace even when the transport or encoding changes.
+The runtime derives both endpoints from the same graph. Reference envelopes carry the experimental SHA-256 semantic identity, expected state, and monotonic sequence. The compact path establishes those semantics from the verified plan, then sends only a transition ID, sequence, and optional payload. TCP, QUIC, and Iroh peers first exchange a fail-closed session preface that binds the version, conversation, plan, roles, and exact encoding. Iroh additionally binds the authenticated endpoint identities and concrete TLS connection. Persistent node files, public endpoint tickets, and local authorization policies let independent processes admit an exact remote identity only for an exact Eve role and plan. A demo reports whether both roles observed the same semantic trace even when the transport or encoding changes.
 
 Transport closure, timeout, reset, unreachable, and uncertainty are declared branches rather than untyped Rust errors. The deterministic fault demo can fail an exact role, operation, and one-based occurrence. An injected server timeout can produce `transport.timeout` locally while the peer records `transport.uncertain`; Eve does not pretend a partition gives both roles identical knowledge.
 
@@ -168,7 +176,8 @@ Eve uses three existing systems behind explicit boundaries:
   conversation and plan identities, which the server verifies at startup.
 
 They are experimental adapters, not mandatory language dependencies. See [the complete substrate
-boundary](docs/substrates.md) and [RFC-0003](rfcs/0003-pluggable-substrates.md).
+boundary](docs/substrates.md), the [two-node runbook](docs/two-node.md), and
+[RFC-0003](rfcs/0003-pluggable-substrates.md).
 
 ## Why Eve?
 

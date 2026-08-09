@@ -1545,7 +1545,7 @@ fn decode_envelope(encoded: &[u8]) -> Result<WireEnvelope, RuntimeError> {
     Ok(serde_json::from_slice(encoded)?)
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExecutionReport {
     pub role: String,
     pub transport: String,
@@ -1560,7 +1560,7 @@ pub struct ExecutionReport {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub failure: Option<String>,
     pub final_state: String,
-    #[serde(skip_serializing)]
+    #[serde(skip_serializing, default)]
     pub semantic_trace: Vec<Frame>,
 }
 

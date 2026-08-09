@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vantar.xyz/eve/spec/eve-endpoint-v0.schema.json",
+  "title": "Eve Public Endpoint Ticket v0",
+  "description": "Public direct-address information for an authenticated Eve/Iroh node.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["eve_endpoint", "endpoint_identity", "addresses"],
+  "properties": {
+    "eve_endpoint": {
+      "const": "0.1.0"
+    },
+    "endpoint_identity": {
+      "$ref": "#/$defs/endpoint_id"
+    },
+    "addresses": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 3,
+        "description": "An IPv4 or bracketed IPv6 socket address."
+      }
+    }
+  },
+  "$defs": {
+    "endpoint_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

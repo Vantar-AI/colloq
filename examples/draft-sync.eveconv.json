@@ -1,0 +1,74 @@
+{
+  "$schema": "../spec/eve-conversation-v0.schema.json",
+  "eve_conversation": "0.1.0",
+  "module": {
+    "id": "eve.draft-sync",
+    "semantic_version": "0.1.0"
+  },
+  "roles": [
+    {
+      "id": "client",
+      "placement": ["node"],
+      "capabilities": ["draft.sync"]
+    },
+    {
+      "id": "server",
+      "placement": ["node"],
+      "capabilities": ["draft.sync"]
+    }
+  ],
+  "types": [
+    {
+      "id": "sync",
+      "kind": "record",
+      "fields": [
+        {
+          "id": "bytes",
+          "type": "string"
+        }
+      ]
+    }
+  ],
+  "failures": [],
+  "initial": "client-turn",
+  "states": [
+    {
+      "kind": "choice",
+      "id": "client-turn",
+      "chooser": "client",
+      "branches": {
+        "message": "client-send",
+        "done": "end"
+      }
+    },
+    {
+      "kind": "send",
+      "id": "client-send",
+      "from": "client",
+      "to": "server",
+      "message": "sync",
+      "next": "server-turn"
+    },
+    {
+      "kind": "choice",
+      "id": "server-turn",
+      "chooser": "server",
+      "branches": {
+        "message": "server-send",
+        "idle": "client-turn"
+      }
+    },
+    {
+      "kind": "send",
+      "id": "server-send",
+      "from": "server",
+      "to": "client",
+      "message": "sync",
+      "next": "client-turn"
+    },
+    {
+      "kind": "end",
+      "id": "end"
+    }
+  ]
+}

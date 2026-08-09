@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vantar.xyz/eve/spec/eve-authorization-v0.schema.json",
+  "title": "Eve Endpoint Authorization Policy v0",
+  "description": "A local allow-list binding authenticated endpoint identities to exact Eve roles and plan identities.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["eve_authorization", "rules"],
+  "properties": {
+    "eve_authorization": {
+      "const": "0.1.0"
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["endpoint_identity", "role", "plan"],
+        "properties": {
+          "endpoint_identity": {
+            "$ref": "#/$defs/endpoint_id"
+          },
+          "role": {
+            "$ref": "#/$defs/id"
+          },
+          "plan": {
+            "$ref": "#/$defs/sha256"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "endpoint_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_.-]*$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    }
+  }
+}

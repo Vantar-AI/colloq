@@ -11,14 +11,32 @@ value = "sha256:5d66c5bdc25454b7542021da3d5c73ff05d4d3757f1ae90738189799d18f10d1
 key = "EVE_CONVERSATION_IDENTITY"
 value = "sha256:41c84488dc95551605671ea78046cad98bbdeb9c3ede1d73d7303b6f50a7c0d4"
 
+[[env]]
+key = "EVE_NODE_IDENTITY_JSON"
+required = true
+sensitive = true
+description = "Local Eve node identity JSON; contains the Iroh private key."
+
+[[env]]
+key = "EVE_AUTHORIZATION_JSON"
+required = true
+sensitive = true
+description = "Exact peer/role/plan authorization policy JSON."
+
+[[env]]
+key = "EVE_ADVERTISE_ADDRESS"
+required = true
+sensitive = false
+description = "Public or overlay socket address advertised in the endpoint ticket."
+
 [services.server]
-command = "/bin/eve serve /etc/eve/conversation.json --listen 0.0.0.0:7878 --tokens 3 --wire compact --forever"
+command = "/bin/eve serve-iroh /etc/eve/conversation.json --identity /run/eve/server.evenode.json --policy /run/eve/server.authorization.json --listen 0.0.0.0:7880 --ticket-out /tmp/server.eveendpoint.json --tokens 3 --wire compact"
 
 [[services.server.ports]]
-port = 7878
+port = 7880
 name = "eve"
-type = "tcp"
-node_port = 7878
+type = "udp"
+node_port = 7880
 
 [services.server.concurrency]
 mode = "fixed"

@@ -8,6 +8,9 @@ This directory contains machine-readable experiments for the canonical Eve Graph
 - [`eve-conversation-v0.schema.json`](eve-conversation-v0.schema.json) — executable two-role conversation interchange used by the Rust prototype.
 - [`eve-plan-v0.schema.json`](eve-plan-v0.schema.json) — compiled two-endpoint execution-plan artifact, including the optional compact transition dictionary used to start reusable sessions.
 - [`eve-session-v0.schema.json`](eve-session-v0.schema.json) — plan-bound network preface exchanged before reference or compact Eve frames.
+- [`eve-node-v0.schema.json`](eve-node-v0.schema.json) — local-only persistent Iroh identity; the secret-bearing file is written mode `0600` on Unix and must never be shared.
+- [`eve-endpoint-v0.schema.json`](eve-endpoint-v0.schema.json) — public direct-address ticket for a persistent endpoint identity.
+- [`eve-authorization-v0.schema.json`](eve-authorization-v0.schema.json) — local allow-list binding authenticated endpoint IDs to exact roles and plan identities.
 
 Published schemas are available at `https://vantar.xyz/eve/spec/<schema-file>`.
 
@@ -18,6 +21,8 @@ The original Eve Graph v0 schema predates the conversation-state model in [RFC-0
 Eve Plan v0 is a derived artifact, not another semantic source. It carries the experimental conversation identity, deterministic plan identity, projected endpoint graphs, and a compiler-derived compact-wire dictionary. JSON Schema checks its representation; the Rust plan verifier additionally recalculates the digest, validates state and role references, and rejects a noncanonical transition table before sessions are created. Older v0 artifacts may omit `wire`; the runtime derives it when preparing the plan.
 
 Eve Session Preface v0 binds one network connection to a session version, conversation and plan identity, endpoint role, and exact wire encoding. A mismatch aborts before frame zero. Optional `endpoint_identity` and `channel_binding` fields carry transport-authenticated evidence. The Iroh adapter requires both, checks the mutually authenticated endpoint keys, and verifies a TLS exporter bound to the concrete connection and plan. On the standalone QUIC adapter the client authenticates the server through a pinned certificate; TCP provides no cryptographic authentication, and the standalone QUIC server does not authenticate its client.
+
+Eve's node artifacts separate three concerns. The secret-bearing node identity proves who the local Iroh endpoint is. The public endpoint ticket says where that identity can be reached. The authorization policy says which authenticated remote identity may assume which Eve role under which exact compiled plan. v0 has no wildcard grants: changing plan semantics requires an explicit new authorization.
 
 ## Canonicalization experiment
 

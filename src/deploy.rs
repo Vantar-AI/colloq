@@ -29,7 +29,8 @@ pub struct MirenOptions {
     pub tokens: usize,
     pub instances: usize,
     pub wire: WireEncoding,
-    /// Expose the raw Eve TCP port on the Miren node for a multi-server testbed.
+    pub transport: MirenTransport,
+    /// Expose the raw Eve TCP or Iroh/UDP port on the Miren node.
     pub node_port: bool,
 }
 
@@ -42,9 +43,16 @@ impl MirenOptions {
             tokens: 3,
             instances: 1,
             wire: WireEncoding::Compact,
+            transport: MirenTransport::Tcp,
             node_port: true,
         }
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MirenTransport {
+    Tcp,
+    Iroh,
 }
 
 #[derive(Debug, Clone)]
@@ -58,10 +66,10 @@ pub struct MirenBundle {
 
 /// Render a self-contained Miren adapter for the current executable Generate runtime.
 ///
-/// Miren provides build, placement, restart, and overlay networking. Eve still validates the
-/// conversation and owns the plan/session identities. The generated service uses the existing
-/// TCP transport because Miren's WireGuard overlay already supplies routable cluster addresses;
-/// Iroh remains an independently selectable authenticated Eve transport.
+/// Miren provides build, placement, restart, and L4 forwarding. Eve still validates the
+/// conversation and owns plan/session identities. The TCP mode is an unauthenticated correctness
+/// testbed. The Iroh mode exposes UDP and requires persistent identity, exact authorization, and
+/// an advertised routable address through deployment configuration.
 pub fn render_miren_bundle(
     conversation: &Conversation,
     options: &MirenOptions,
@@ -76,26 +84,47 @@ pub fn render_miren_bundle(
         .conversation_source
         .to_str()
         .ok_or_else(|| DeploymentError::Invalid("conversation path must be UTF-8".to_string()))?;
-    let command = format!(
-        "/bin/eve serve /etc/eve/conversation.json --listen 0.0.0.0:{} --tokens {} --wire {} --forever",
-        options.port, options.tokens, wire
-    );
+    let command = match options.transport {
+        MirenTransport::Tcp => format!(
+            "/bin/eve serve /etc/eve/conversation.json --listen 0.0.0.0:{} --tokens {} --wire {} --forever",
+            options.port, options.tokens, wire
+        ),
+        MirenTransport::Iroh => format!(
+            "/bin/eve serve-iroh /etc/eve/conversation.json --identity /run/eve/server.evenode.json --policy /run/eve/server.authorization.json --listen 0.0.0.0:{} --ticket-out /tmp/server.eveendpoint.json --tokens {} --wire {}",
+            options.port, options.tokens, wire
+        ),
+    };
+
+    let mut env = vec![
+        MirenEnv::value("EVE_PLAN_IDENTITY", &plan.plan_identity),
+        MirenEnv::value("EVE_CONVERSATION_IDENTITY", &plan.conversation_identity),
+    ];
+    if options.transport == MirenTransport::Iroh {
+        env.extend([
+            MirenEnv::required(
+                "EVE_NODE_IDENTITY_JSON",
+                true,
+                "Local Eve node identity JSON; contains the Iroh private key.",
+            ),
+            MirenEnv::required(
+                "EVE_AUTHORIZATION_JSON",
+                true,
+                "Exact peer/role/plan authorization policy JSON.",
+            ),
+            MirenEnv::required(
+                "EVE_ADVERTISE_ADDRESS",
+                false,
+                "Public or overlay socket address advertised in the endpoint ticket.",
+            ),
+        ]);
+    }
 
     let app = MirenApp {
         name: options.app_name.clone(),
         build: MirenBuild {
             dockerfile: MIREN_DOCKERFILE.to_string(),
         },
-        env: vec![
-            MirenEnv {
-                key: "EVE_PLAN_IDENTITY".to_string(),
-                value: plan.plan_identity.clone(),
-            },
-            MirenEnv {
-                key: "EVE_CONVERSATION_IDENTITY".to_string(),
-                value: plan.conversation_identity.clone(),
-            },
-        ],
+        env,
         services: BTreeMap::from([(
             "server".to_string(),
             MirenService {
@@ -103,7 +132,11 @@ pub fn render_miren_bundle(
                 ports: vec![MirenPort {
                     port: options.port,
                     name: "eve".to_string(),
-                    protocol: "tcp".to_string(),
+                    protocol: match options.transport {
+                        MirenTransport::Tcp => "tcp",
+                        MirenTransport::Iroh => "udp",
+                    }
+                    .to_string(),
                     node_port: options.node_port.then_some(options.port),
                 }],
                 concurrency: MirenConcurrency {
@@ -116,7 +149,7 @@ pub fn render_miren_bundle(
     };
 
     let dockerfile = format!(
-        "FROM rust:1.96-bookworm AS build\nWORKDIR /src\nCOPY Cargo.toml Cargo.lock ./\nCOPY src ./src\nRUN cargo build --release --locked\n\nFROM debian:bookworm-slim\nRUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*\nCOPY --from=build /src/target/release/eve /bin/eve\nCOPY {source} /etc/eve/conversation.json\nUSER 65532:65532\n"
+        "FROM rust:1.96-bookworm AS build\nWORKDIR /src\nCOPY Cargo.toml Cargo.lock ./\nCOPY src ./src\nRUN cargo build --release --locked\n\nFROM debian:bookworm-slim\nRUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*\nCOPY --from=build /src/target/release/eve /bin/eve\nCOPY {source} /etc/eve/conversation.json\nCOPY examples/draft-sync.eveconv.json /etc/eve/draft-sync.eveconv.json\nUSER 65532:65532\n"
     );
 
     Ok(MirenBundle {
@@ -224,7 +257,36 @@ struct MirenBuild {
 #[derive(Serialize)]
 struct MirenEnv {
     key: String,
-    value: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    value: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    required: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    sensitive: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    description: Option<String>,
+}
+
+impl MirenEnv {
+    fn value(key: &str, value: &str) -> Self {
+        Self {
+            key: key.to_string(),
+            value: Some(value.to_string()),
+            required: None,
+            sensitive: None,
+            description: None,
+        }
+    }
+
+    fn required(key: &str, sensitive: bool, description: &str) -> Self {
+        Self {
+            key: key.to_string(),
+            value: None,
+            required: Some(true),
+            sensitive: Some(sensitive),
+            description: Some(description.to_string()),
+        }
+    }
 }
 
 #[derive(Serialize)]
@@ -289,5 +351,23 @@ mod tests {
             render_miren_bundle(&conversation, &options),
             Err(DeploymentError::Invalid(_))
         ));
+    }
+
+    #[test]
+    fn miren_iroh_bundle_exposes_udp_and_requires_private_configuration() {
+        let conversation = conversation();
+        let mut options =
+            MirenOptions::for_conversation(&conversation, "examples/generate.eveconv.json");
+        options.transport = MirenTransport::Iroh;
+        let bundle = render_miren_bundle(&conversation, &options).unwrap();
+        let manifest: toml::Value = toml::from_str(&bundle.app_toml).unwrap();
+        assert_eq!(
+            manifest["services"]["server"]["ports"][0]["type"].as_str(),
+            Some("udp")
+        );
+        assert!(bundle.app_toml.contains("EVE_NODE_IDENTITY_JSON"));
+        assert!(bundle.app_toml.contains("sensitive = true"));
+        assert!(bundle.app_toml.contains("EVE_ADVERTISE_ADDRESS"));
+        assert!(bundle.app_toml.contains("serve-iroh"));
     }
 }

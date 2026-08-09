@@ -72,7 +72,7 @@ impl IrohNode {
     }
 
     pub fn accept(self, expected_peer: EndpointId) -> Result<IrohTransport, RuntimeError> {
-        self.accept_with_codec(expected_peer, EnvelopeCodec::Reference)
+        self.accept_with_codec(&[expected_peer], EnvelopeCodec::Reference)
     }
 
     pub fn accept_compact(
@@ -81,14 +81,33 @@ impl IrohNode {
         plan: &PreparedPlan,
     ) -> Result<IrohTransport, RuntimeError> {
         self.accept_with_codec(
-            expected_peer,
+            &[expected_peer],
+            EnvelopeCodec::for_plan(WireEncoding::Compact, plan),
+        )
+    }
+
+    /// Accept one connection only when its cryptographic EndpointID is in the supplied policy set.
+    pub fn accept_authorized(
+        self,
+        authorized_peers: &[EndpointId],
+    ) -> Result<IrohTransport, RuntimeError> {
+        self.accept_with_codec(authorized_peers, EnvelopeCodec::Reference)
+    }
+
+    pub fn accept_authorized_compact(
+        self,
+        authorized_peers: &[EndpointId],
+        plan: &PreparedPlan,
+    ) -> Result<IrohTransport, RuntimeError> {
+        self.accept_with_codec(
+            authorized_peers,
             EnvelopeCodec::for_plan(WireEncoding::Compact, plan),
         )
     }
 
     fn accept_with_codec(
         self,
-        expected_peer: EndpointId,
+        authorized_peers: &[EndpointId],
         codec: EnvelopeCodec,
     ) -> Result<IrohTransport, RuntimeError> {
         let Self { endpoint, runtime } = self;
@@ -101,7 +120,11 @@ impl IrohNode {
                 accepting.await.map_err(|error| error.to_string())
             })
             .map_err(RuntimeError::Iroh)?;
-        verify_remote_identity(&connection, expected_peer)?;
+        if let Err(error) = verify_remote_authorized(&connection, authorized_peers) {
+            connection.close(VarInt::from_u32(1), b"unauthorized Eve endpoint");
+            runtime.block_on(endpoint.close());
+            return Err(error);
+        }
         let (send, receive) = runtime
             .block_on(async { connection.accept_bi().await })
             .map_err(|error| RuntimeError::Iroh(error.to_string()))?;
@@ -506,6 +529,24 @@ fn verify_remote_identity(
     Ok(())
 }
 
+fn verify_remote_authorized(
+    connection: &Connection,
+    authorized: &[EndpointId],
+) -> Result<(), RuntimeError> {
+    let actual = connection.remote_id();
+    if authorized.contains(&actual) {
+        return Ok(());
+    }
+    Err(RuntimeError::IrohPeerIdentity {
+        expected: authorized
+            .iter()
+            .map(ToString::to_string)
+            .collect::<Vec<_>>()
+            .join(","),
+        actual: actual.to_string(),
+    })
+}
+
 fn verify_iroh_session_preface(
     peer: &SessionPreface,
     plan: &PreparedPlan,
@@ -604,6 +645,31 @@ mod tests {
         let impostor = SecretKey::generate().public();
         let result = client.connect(server.addr(), impostor);
         assert!(matches!(result, Err(RuntimeError::IrohPeerIdentity { .. })));
+    }
+
+    #[test]
+    fn iroh_server_closes_an_unauthorized_peer_without_stranding_the_client() {
+        let plan = PreparedPlan::compile(&conversation()).unwrap();
+        let server =
+            IrohNode::bind_direct(SecretKey::generate(), "127.0.0.1:0".parse().unwrap()).unwrap();
+        let client =
+            IrohNode::bind_direct(SecretKey::generate(), "127.0.0.1:0".parse().unwrap()).unwrap();
+        let server_addr = server.addr();
+        let server_id = server.id();
+        let allowed = [SecretKey::generate().public()];
+
+        let (client_result, server_result) = std::thread::scope(|scope| {
+            let server_worker = scope.spawn(|| server.accept_authorized(&allowed));
+            let client_result = client
+                .connect(server_addr, server_id)
+                .and_then(|mut transport| transport.establish_session(&plan, "client", "server"));
+            (client_result, server_worker.join().unwrap())
+        });
+        assert!(client_result.is_err());
+        assert!(matches!(
+            server_result,
+            Err(RuntimeError::IrohPeerIdentity { .. })
+        ));
     }
 
     #[test]

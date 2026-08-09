@@ -1,20 +1,24 @@
 use clap::{Parser, Subcommand, ValueEnum};
 use eve::benchmark::run_reference_benchmark;
-use eve::deploy::{MirenOptions, render_miren_bundle};
+use eve::deploy::{MirenOptions, MirenTransport, render_miren_bundle};
+use eve::draft_exchange::{run_draft_sync_client, run_draft_sync_server};
 use eve::graph::{AutomergeDraft, DraftScalarPatch};
+use eve::node::{AuthorizationPolicy, EndpointTicket, NodeIdentity};
 use eve::plan::{EvePlan, PreparedPlan};
 use eve::runtime::{
-    FaultOperation, FaultPlan, QuicListener, QuicTransport, TcpTransport, WireEncoding,
-    run_generate_client_plan, run_generate_server_plan, run_iroh_demo,
+    ExecutionReport, FaultOperation, FaultPlan, IrohNode, QuicListener, QuicTransport,
+    TcpTransport, WireEncoding, run_generate_client_plan, run_generate_server_plan, run_iroh_demo,
     run_iroh_plan_demo_with_encoding, run_memory_demo, run_memory_fault_demo,
     run_memory_plan_demo_with_encoding, run_quic_demo, run_quic_plan_demo_with_encoding,
     run_tcp_demo, run_tcp_plan_demo_with_encoding,
 };
 use eve::{Conversation, Frame, project, validate, verify_trace};
+use serde::Serialize;
 use serde::de::DeserializeOwned;
 use std::fs;
 use std::net::{SocketAddr, TcpListener};
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 
 #[derive(Debug, Parser)]
 #[command(
@@ -29,6 +33,31 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Command {
+    /// Generate one persistent local Iroh identity (private file, mode 0600 on Unix).
+    NodeInit {
+        #[arg(long, default_value = "build/node.evenode.json")]
+        out: PathBuf,
+    },
+    /// Add one exact peer/role/plan grant to a local authorization policy.
+    PolicyAllow {
+        #[arg(default_value = "examples/generate.eveconv.json")]
+        conversation: PathBuf,
+        #[arg(long, default_value = "build/eve.authorization.json")]
+        policy: PathBuf,
+        #[arg(long)]
+        peer: String,
+        #[arg(long)]
+        role: String,
+    },
+    /// Create two persistent identities and reciprocal Generate + draft-sync policies.
+    BootstrapTwoNode {
+        #[arg(default_value = "examples/generate.eveconv.json")]
+        conversation: PathBuf,
+        #[arg(long, default_value = "examples/draft-sync.eveconv.json")]
+        draft_conversation: PathBuf,
+        #[arg(long, default_value = "build/two-node")]
+        out: PathBuf,
+    },
     /// Validate a global Eve conversation.
     Check {
         conversation: PathBuf,
@@ -90,6 +119,9 @@ enum Command {
         instances: usize,
         #[arg(long, value_enum, default_value_t = WireEncodingArg::Compact)]
         wire: WireEncodingArg,
+        /// Deploy the plaintext TCP testbed or mutually authenticated Iroh over UDP.
+        #[arg(long, value_enum, default_value_t = DeploymentTransportArg::Tcp)]
+        transport: DeploymentTransportArg,
         /// Keep the service internal to Miren instead of allocating a node port.
         #[arg(long)]
         internal_only: bool,
@@ -243,6 +275,95 @@ enum Command {
         #[arg(long, value_enum, default_value_t = WireEncodingArg::Reference)]
         wire: WireEncodingArg,
     },
+    /// Serve a Generate endpoint as a separate, mutually authenticated Iroh process.
+    ServeIroh {
+        #[arg(default_value = "examples/generate.eveconv.json")]
+        conversation: PathBuf,
+        #[arg(long, default_value = "build/two-node/server.evenode.json")]
+        identity: PathBuf,
+        #[arg(long, default_value = "build/two-node/server.authorization.json")]
+        policy: PathBuf,
+        #[arg(long, default_value = "127.0.0.1:7880")]
+        listen: SocketAddr,
+        /// Publish this routable address instead of the bind address.
+        #[arg(long)]
+        advertise: Option<SocketAddr>,
+        #[arg(long, default_value = "build/two-node/server.eveendpoint.json")]
+        ticket_out: PathBuf,
+        #[arg(long, default_value_t = 3)]
+        tokens: usize,
+        #[arg(long, value_enum, default_value_t = WireEncodingArg::Compact)]
+        wire: WireEncodingArg,
+        #[arg(long)]
+        report_out: Option<PathBuf>,
+    },
+    /// Connect a Generate endpoint to an authorized Iroh server ticket.
+    ConnectIroh {
+        #[arg(default_value = "examples/generate.eveconv.json")]
+        conversation: PathBuf,
+        #[arg(long, default_value = "build/two-node/client.evenode.json")]
+        identity: PathBuf,
+        #[arg(long, default_value = "build/two-node/client.authorization.json")]
+        policy: PathBuf,
+        #[arg(long, default_value = "build/two-node/server.eveendpoint.json")]
+        server: PathBuf,
+        #[arg(
+            long,
+            default_value = "Explain why the conversation is the computation."
+        )]
+        prompt: String,
+        #[arg(long)]
+        cancel_after: Option<usize>,
+        #[arg(long, value_enum, default_value_t = WireEncodingArg::Compact)]
+        wire: WireEncodingArg,
+        #[arg(long)]
+        report_out: Option<PathBuf>,
+    },
+    /// Serve an Automerge draft sync endpoint over an authorized Eve/Iroh session.
+    DraftServeIroh {
+        #[arg(default_value = "examples/draft-sync.eveconv.json")]
+        conversation: PathBuf,
+        #[arg(long)]
+        draft: PathBuf,
+        #[arg(long, default_value = "build/two-node/server.evenode.json")]
+        identity: PathBuf,
+        #[arg(long, default_value = "build/two-node/server.authorization.json")]
+        policy: PathBuf,
+        #[arg(long, default_value = "127.0.0.1:7881")]
+        listen: SocketAddr,
+        #[arg(long)]
+        advertise: Option<SocketAddr>,
+        #[arg(long, default_value = "build/two-node/draft-server.eveendpoint.json")]
+        ticket_out: PathBuf,
+        #[arg(long, value_enum, default_value_t = WireEncodingArg::Compact)]
+        wire: WireEncodingArg,
+        #[arg(long)]
+        report_out: Option<PathBuf>,
+    },
+    /// Synchronize a local Automerge draft with an authorized Eve/Iroh server.
+    DraftConnectIroh {
+        #[arg(default_value = "examples/draft-sync.eveconv.json")]
+        conversation: PathBuf,
+        #[arg(long)]
+        draft: PathBuf,
+        #[arg(long, default_value = "build/two-node/client.evenode.json")]
+        identity: PathBuf,
+        #[arg(long, default_value = "build/two-node/client.authorization.json")]
+        policy: PathBuf,
+        #[arg(long, default_value = "build/two-node/draft-server.eveendpoint.json")]
+        server: PathBuf,
+        #[arg(long, value_enum, default_value_t = WireEncodingArg::Compact)]
+        wire: WireEncodingArg,
+        #[arg(long)]
+        report_out: Option<PathBuf>,
+    },
+    /// Verify that independently captured client/server reports describe one Eve session.
+    VerifySession {
+        #[arg(long)]
+        client: PathBuf,
+        #[arg(long)]
+        server: PathBuf,
+    },
 }
 
 #[derive(Clone, Debug, ValueEnum)]
@@ -263,6 +384,21 @@ enum FaultOperationArg {
 enum WireEncodingArg {
     Reference,
     Compact,
+}
+
+#[derive(Clone, Debug, ValueEnum)]
+enum DeploymentTransportArg {
+    Tcp,
+    Iroh,
+}
+
+impl From<DeploymentTransportArg> for MirenTransport {
+    fn from(transport: DeploymentTransportArg) -> Self {
+        match transport {
+            DeploymentTransportArg::Tcp => Self::Tcp,
+            DeploymentTransportArg::Iroh => Self::Iroh,
+        }
+    }
 }
 
 impl From<WireEncodingArg> for WireEncoding {
@@ -286,6 +422,80 @@ impl From<FaultOperationArg> for FaultOperation {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
     match cli.command {
+        Command::NodeInit { out } => {
+            ensure_absent(&out)?;
+            let identity = NodeIdentity::generate();
+            identity.save_private(&out)?;
+            println!(
+                "created node {} at {} (private, do not share)",
+                identity.endpoint_identity,
+                out.display()
+            );
+        }
+        Command::PolicyAllow {
+            conversation,
+            policy,
+            peer,
+            role,
+        } => {
+            let conversation: Conversation = read_json(&conversation)?;
+            let plan = PreparedPlan::compile(&conversation)?;
+            let peer = iroh::EndpointId::from_str(&peer)?;
+            let mut authorization = if policy.exists() {
+                AuthorizationPolicy::load(&policy)?
+            } else {
+                AuthorizationPolicy::default()
+            };
+            authorization.allow(peer, &role, &plan);
+            authorization.save(&policy)?;
+            println!(
+                "authorized {peer} as {role} for {} in {}",
+                plan.plan_identity(),
+                policy.display()
+            );
+        }
+        Command::BootstrapTwoNode {
+            conversation,
+            draft_conversation,
+            out,
+        } => {
+            let generate: Conversation = read_json(&conversation)?;
+            let generate = PreparedPlan::compile(&generate)?;
+            let draft: Conversation = read_json(&draft_conversation)?;
+            let draft = PreparedPlan::compile(&draft)?;
+            let server_path = out.join("server.evenode.json");
+            let client_path = out.join("client.evenode.json");
+            let server_policy_path = out.join("server.authorization.json");
+            let client_policy_path = out.join("client.authorization.json");
+            for path in [
+                &server_path,
+                &client_path,
+                &server_policy_path,
+                &client_policy_path,
+            ] {
+                ensure_absent(path)?;
+            }
+            let server = NodeIdentity::generate();
+            let client = NodeIdentity::generate();
+            let server_id = server.endpoint_id()?;
+            let client_id = client.endpoint_id()?;
+            let mut server_policy = AuthorizationPolicy::default();
+            server_policy.allow(client_id, "client", &generate);
+            server_policy.allow(client_id, "client", &draft);
+            let mut client_policy = AuthorizationPolicy::default();
+            client_policy.allow(server_id, "server", &generate);
+            client_policy.allow(server_id, "server", &draft);
+            server.save_private(&server_path)?;
+            client.save_private(&client_path)?;
+            server_policy.save(&server_policy_path)?;
+            client_policy.save(&client_policy_path)?;
+            println!(
+                "created two-node trust domain in {}\nserver: {}\nclient: {}",
+                out.display(),
+                server.endpoint_identity,
+                client.endpoint_identity
+            );
+        }
         Command::Check { conversation, json } => {
             let conversation: Conversation = read_json(&conversation)?;
             match validate(&conversation) {
@@ -385,6 +595,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             tokens,
             instances,
             wire,
+            transport,
             internal_only,
         } => {
             let source = conversation.clone();
@@ -397,6 +608,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             options.tokens = tokens;
             options.instances = instances;
             options.wire = wire.into();
+            options.transport = transport.into();
             options.node_port = !internal_only;
             let bundle = render_miren_bundle(&conversation, &options)?;
             write_bytes(Path::new(".miren/app.toml"), bundle.app_toml.as_bytes())?;
@@ -601,6 +813,142 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let report = run_generate_client_plan(&plan, &mut transport, &prompt, cancel_after)?;
             println!("{}", serde_json::to_string_pretty(&report)?);
         }
+        Command::ServeIroh {
+            conversation,
+            identity,
+            policy,
+            listen,
+            advertise,
+            ticket_out,
+            tokens,
+            wire,
+            report_out,
+        } => {
+            let conversation: Conversation = read_json(&conversation)?;
+            let plan = PreparedPlan::compile(&conversation)?;
+            verify_deployment_identity(&plan)?;
+            let identity = load_node_identity(&identity)?;
+            let authorization = load_authorization_policy(&policy)?;
+            let authorized = authorization.authorized_peers("client", &plan)?;
+            let node = IrohNode::bind_direct(identity.secret_key()?, listen)?;
+            let ticket = endpoint_ticket(&node, advertise)?;
+            ticket.save(&ticket_out)?;
+            println!(
+                "Eve/Iroh server {} listening; wrote {}",
+                node.id(),
+                ticket_out.display()
+            );
+            let mut transport = match wire.into() {
+                WireEncoding::Reference => node.accept_authorized(&authorized)?,
+                WireEncoding::Compact => node.accept_authorized_compact(&authorized, &plan)?,
+            };
+            transport.establish_session(&plan, "server", "client")?;
+            let report = run_generate_server_plan(&plan, &mut transport, tokens)?;
+            emit_report(&report, report_out.as_deref())?;
+        }
+        Command::ConnectIroh {
+            conversation,
+            identity,
+            policy,
+            server,
+            prompt,
+            cancel_after,
+            wire,
+            report_out,
+        } => {
+            let conversation: Conversation = read_json(&conversation)?;
+            let plan = PreparedPlan::compile(&conversation)?;
+            let identity = load_node_identity(&identity)?;
+            let authorization = load_authorization_policy(&policy)?;
+            let ticket = load_endpoint_ticket(&server)?;
+            let server_id = ticket.endpoint_id()?;
+            authorization.authorize(server_id, "server", &plan)?;
+            let node = IrohNode::bind_direct(
+                identity.secret_key()?,
+                "0.0.0.0:0".parse().expect("valid wildcard address"),
+            )?;
+            let mut transport = match wire.into() {
+                WireEncoding::Reference => node.connect(ticket.endpoint_addr()?, server_id)?,
+                WireEncoding::Compact => {
+                    node.connect_compact(ticket.endpoint_addr()?, server_id, &plan)?
+                }
+            };
+            transport.establish_session(&plan, "client", "server")?;
+            let report = run_generate_client_plan(&plan, &mut transport, &prompt, cancel_after)?;
+            emit_report(&report, report_out.as_deref())?;
+        }
+        Command::DraftServeIroh {
+            conversation,
+            draft,
+            identity,
+            policy,
+            listen,
+            advertise,
+            ticket_out,
+            wire,
+            report_out,
+        } => {
+            let conversation: Conversation = read_json(&conversation)?;
+            let plan = PreparedPlan::compile(&conversation)?;
+            let identity = load_node_identity(&identity)?;
+            let authorization = load_authorization_policy(&policy)?;
+            let authorized = authorization.authorized_peers("client", &plan)?;
+            let node = IrohNode::bind_direct(identity.secret_key()?, listen)?;
+            let ticket = endpoint_ticket(&node, advertise)?;
+            ticket.save(&ticket_out)?;
+            println!(
+                "Eve draft-sync server {} listening; wrote {}",
+                node.id(),
+                ticket_out.display()
+            );
+            let mut transport = match wire.into() {
+                WireEncoding::Reference => node.accept_authorized(&authorized)?,
+                WireEncoding::Compact => node.accept_authorized_compact(&authorized, &plan)?,
+            };
+            transport.establish_session(&plan, "server", "client")?;
+            let mut document = AutomergeDraft::load(&fs::read(&draft)?)?;
+            let report = run_draft_sync_server(&plan, &mut transport, &mut document)?;
+            write_bytes(&draft, &document.save())?;
+            emit_report(&report, report_out.as_deref())?;
+        }
+        Command::DraftConnectIroh {
+            conversation,
+            draft,
+            identity,
+            policy,
+            server,
+            wire,
+            report_out,
+        } => {
+            let conversation: Conversation = read_json(&conversation)?;
+            let plan = PreparedPlan::compile(&conversation)?;
+            let identity = load_node_identity(&identity)?;
+            let authorization = load_authorization_policy(&policy)?;
+            let ticket = load_endpoint_ticket(&server)?;
+            let server_id = ticket.endpoint_id()?;
+            authorization.authorize(server_id, "server", &plan)?;
+            let node = IrohNode::bind_direct(
+                identity.secret_key()?,
+                "0.0.0.0:0".parse().expect("valid wildcard address"),
+            )?;
+            let mut transport = match wire.into() {
+                WireEncoding::Reference => node.connect(ticket.endpoint_addr()?, server_id)?,
+                WireEncoding::Compact => {
+                    node.connect_compact(ticket.endpoint_addr()?, server_id, &plan)?
+                }
+            };
+            transport.establish_session(&plan, "client", "server")?;
+            let mut document = AutomergeDraft::load(&fs::read(&draft)?)?;
+            let report = run_draft_sync_client(&plan, &mut transport, &mut document)?;
+            write_bytes(&draft, &document.save())?;
+            emit_report(&report, report_out.as_deref())?;
+        }
+        Command::VerifySession { client, server } => {
+            let client: ExecutionReport = read_json(&client)?;
+            let server: ExecutionReport = read_json(&server)?;
+            let report = verify_session_reports(client, server)?;
+            println!("{}", serde_json::to_string_pretty(&report)?);
+        }
     }
     Ok(())
 }
@@ -619,6 +967,145 @@ fn verify_deployment_identity(plan: &PreparedPlan) -> Result<(), std::io::Error>
         }
     }
     Ok(())
+}
+
+fn ensure_absent(path: &Path) -> Result<(), std::io::Error> {
+    if path.exists() {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::AlreadyExists,
+            format!(
+                "refusing to overwrite existing identity artifact {}",
+                path.display()
+            ),
+        ));
+    }
+    Ok(())
+}
+
+fn endpoint_ticket(
+    node: &IrohNode,
+    advertise: Option<SocketAddr>,
+) -> Result<EndpointTicket, Box<dyn std::error::Error>> {
+    let mut ticket = EndpointTicket::from_addr(&node.addr());
+    let advertise = advertise
+        .map(Ok)
+        .or_else(|| {
+            std::env::var("EVE_ADVERTISE_ADDRESS")
+                .ok()
+                .map(|value| value.parse::<SocketAddr>())
+        })
+        .transpose()?;
+    if let Some(address) = advertise {
+        ticket.addresses = vec![address];
+    }
+    if ticket
+        .addresses
+        .iter()
+        .any(|address| address.ip().is_unspecified())
+    {
+        return Err(Box::new(std::io::Error::other(
+            "a wildcard Iroh listener requires --advertise or EVE_ADVERTISE_ADDRESS",
+        )));
+    }
+    Ok(ticket)
+}
+
+fn load_node_identity(path: &Path) -> Result<NodeIdentity, Box<dyn std::error::Error>> {
+    if let Ok(encoded) = std::env::var("EVE_NODE_IDENTITY_JSON") {
+        let identity: NodeIdentity = serde_json::from_str(&encoded)?;
+        identity.secret_key()?;
+        Ok(identity)
+    } else {
+        Ok(NodeIdentity::load(path)?)
+    }
+}
+
+fn load_authorization_policy(
+    path: &Path,
+) -> Result<AuthorizationPolicy, Box<dyn std::error::Error>> {
+    if let Ok(encoded) = std::env::var("EVE_AUTHORIZATION_JSON") {
+        Ok(serde_json::from_str(&encoded)?)
+    } else {
+        Ok(AuthorizationPolicy::load(path)?)
+    }
+}
+
+fn load_endpoint_ticket(path: &Path) -> Result<EndpointTicket, Box<dyn std::error::Error>> {
+    if let Ok(encoded) = std::env::var("EVE_SERVER_TICKET_JSON") {
+        let ticket: EndpointTicket = serde_json::from_str(&encoded)?;
+        ticket.endpoint_addr()?;
+        Ok(ticket)
+    } else {
+        Ok(EndpointTicket::load(path)?)
+    }
+}
+
+fn emit_report<T: Serialize>(
+    report: &T,
+    report_out: Option<&Path>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let encoded = serde_json::to_vec_pretty(report)?;
+    if let Some(path) = report_out {
+        write_bytes(path, &encoded)?;
+    }
+    println!("{}", String::from_utf8(encoded)?);
+    Ok(())
+}
+
+#[derive(Debug, Serialize)]
+struct MultiNodeSessionReport {
+    conversation_identity: String,
+    plan_identity: String,
+    semantic_trace_identity: String,
+    semantic_trace_equivalent: bool,
+    outcome_equivalent: bool,
+    client: ExecutionReport,
+    server: ExecutionReport,
+}
+
+fn verify_session_reports(
+    client: ExecutionReport,
+    server: ExecutionReport,
+) -> Result<MultiNodeSessionReport, std::io::Error> {
+    for (field, client_value, server_value) in [
+        (
+            "conversation_identity",
+            client.conversation_identity.as_str(),
+            server.conversation_identity.as_str(),
+        ),
+        (
+            "plan_identity",
+            client.plan_identity.as_str(),
+            server.plan_identity.as_str(),
+        ),
+    ] {
+        if client_value != server_value {
+            return Err(std::io::Error::other(format!(
+                "multi-node {field} mismatch: client {client_value}, server {server_value}"
+            )));
+        }
+    }
+    let semantic_trace_equivalent =
+        client.semantic_trace_identity == server.semantic_trace_identity;
+    let outcome_equivalent = client.completed
+        && server.completed
+        && client.successful == server.successful
+        && client.failure == server.failure
+        && client.tokens == server.tokens;
+    if !semantic_trace_equivalent || !outcome_equivalent {
+        return Err(std::io::Error::other(
+            "multi-node reports do not describe an equivalent Eve execution",
+        ));
+    }
+    Ok(MultiNodeSessionReport {
+        conversation_identity: client.conversation_identity.clone(),
+        plan_identity: client.plan_identity.clone(),
+        semantic_trace_identity: client.semantic_trace_identity.clone(),
+        semantic_trace_equivalent,
+        outcome_equivalent,
+        client,
+        server,
+    })
 }
 
 fn read_json<T: DeserializeOwned>(path: &Path) -> Result<T, Box<dyn std::error::Error>> {

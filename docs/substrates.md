@@ -12,8 +12,8 @@ Eve promotion gate
         │ reject conflicts → validate graph → compile identified plan
         ▼
 projected Eve endpoints
-        ├── Iroh: mutually authenticated peer transport
-        └── TCP on Miren: deployed multi-node testbed
+        ├── Iroh: mutually authenticated, policy-authorized peer transport
+        └── Miren: TCP testbed or Iroh UDP node-port deployment
 ```
 
 The boundary is deliberate: a converged document is not automatically a valid Eve program, a
@@ -50,36 +50,44 @@ cargo run -- draft-promote build/generate.evedraft \
   --plan-out build/promoted.eveplan.json
 ```
 
-The Rust API exposes one `DraftSyncSession` per peer. Automerge synchronization expects an
-ordered, reliable byte stream; it can be carried over an Eve control conversation or an Iroh
-bidirectional stream once that protocol is defined. The CLI does not yet expose remote draft sync.
+The Rust API exposes one `DraftSyncSession` per peer. `examples/draft-sync.eveconv.json` makes that
+ordered exchange an ordinary Eve control conversation: projected client and server endpoints carry
+incremental Automerge messages as typed `sync` frames and explicitly select `message`, `idle`, or
+`done`. `draft-serve-iroh` and `draft-connect-iroh` run it over the same authenticated, plan-bound
+Iroh transport and save both converged drafts. Convergence still does not imply promotion.
 
 ## Iroh: authenticated peer data plane
 
 The Iroh adapter uses the application protocol identifier `eve/0.1` and a persistent Ed25519
-endpoint key. A caller must provide the expected remote Endpoint ID; Eve rejects any other peer
-before accepting a semantic frame.
+endpoint key. A caller supplies a local authorization policy; Eve rejects a remote identity unless
+it is granted the exact peer role and compiled plan before accepting a semantic frame.
 
 The Eve Session Preface adds two optional Iroh bindings:
 
 - `endpoint_identity` declares the endpoint key authenticated by Iroh;
 - `channel_binding` is a TLS exporter bound to the concrete connection and plan identity.
 
-Both sides verify the remote identity, the exporter, the conversation, the plan, the roles, and
-the exact encoding before frame zero. This prevents a valid preface copied from one Iroh
-connection from authenticating another. It still does not answer whether that authenticated key
-is *authorized* for the requested role; policy, key distribution, rotation, revocation, and
-replay-resistant application freshness remain open.
+Both sides verify the remote identity, local authorization, exporter, conversation, plan, roles,
+and exact encoding before frame zero. This prevents a valid preface copied from one Iroh connection
+from authenticating another. Node identity files, public endpoint tickets, and authorization files
+are versioned separately. Rotation, revocation distribution, and replay-resistant application
+freshness remain open.
 
 ```bash
 cargo run -- demo --transport iroh --tokens 3
 cargo run -- run-plan build/generate.eveplan.json \
   --transport iroh --wire compact --tokens 3
+
+cargo run -- bootstrap-two-node --out build/two-node
+cargo run -- serve-iroh --listen 127.0.0.1:7880
+cargo run -- connect-iroh \
+  --server build/two-node/server.eveendpoint.json
 ```
 
-The reference demo uses direct loopback endpoints with relay disabled. The library also exposes a
-default Iroh endpoint with discovery, NAT traversal, and relay fallback. A separate-process CLI
-for loading endpoint keys and addresses is not implemented yet.
+The reference demo uses direct loopback endpoints with relay disabled. Separate-process commands
+load persistent identities and direct-address tickets for routable data-center networks. The
+library also exposes a default Iroh endpoint with discovery, NAT traversal, and relay fallback.
+See the [two-node runbook](two-node.md).
 
 ## Miren: deployment adapter
 
@@ -97,11 +105,12 @@ This writes:
 - `.miren/Dockerfile.eve`, pinning Rust 1.96 and building with `--locked`;
 - environment bindings that make `eve serve` reject a stale or substituted conversation.
 
-The generated server listens on TCP through Miren's routable cluster network. This is useful for
-the first multi-node correctness and fault testbed. It does not imply that TCP is Eve's final data
-plane, and it does not compose Miren and Iroh yet. Miren workload identity could later authorize
-an Eve endpoint key, but that requires an explicit trust and rotation design rather than another
-unverified environment variable.
+The default generated server listens on TCP through Miren's routable cluster network. With
+`--transport iroh`, the adapter instead emits a UDP node port and required sensitive environment
+bindings for the node identity and authorization JSON, plus a required advertised address. Miren
+owns build, placement, restart, and UDP forwarding; Iroh and Eve own endpoint authentication,
+authorization, and the session. Miren workload identity could later replace static key delivery,
+but that requires an explicit attestation and rotation design.
 
 ## What this proves—and what it does not
 
@@ -111,6 +120,6 @@ The integrations establish replaceable interfaces around Eve's core:
 - a plan can run over a mutually authenticated peer connection without changing its trace;
 - an identified plan can be packaged for a multi-node deployment system.
 
-They do not yet provide a general scheduler, arbitrary-role deployment, production authorization,
+They do not yet provide a general scheduler, arbitrary-role deployment, production key lifecycle,
 durable execution recovery, or a complete collaborative editor. Those are the next validation
 targets described in the [roadmap](roadmap.md) and [RFC-0003](../rfcs/0003-pluggable-substrates.md).
