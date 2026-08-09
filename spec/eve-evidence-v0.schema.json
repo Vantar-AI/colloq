@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vantar.xyz/eve/spec/eve-evidence-v0.schema.json",
+  "title": "Eve Evidence Run v0",
+  "description": "A reproducible correctness, security, or performance result for one exact Eve revision and protocol configuration.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "eve_evidence",
+    "run_id",
+    "started_at",
+    "finished_at",
+    "repository",
+    "commit",
+    "dirty",
+    "environment",
+    "protocol",
+    "identities",
+    "outcome",
+    "metrics",
+    "artifacts",
+    "notes"
+  ],
+  "properties": {
+    "$schema": { "type": "string", "format": "uri-reference" },
+    "eve_evidence": { "const": "0.1.0" },
+    "run_id": { "$ref": "#/$defs/nonEmpty" },
+    "started_at": { "type": "string", "format": "date-time" },
+    "finished_at": { "type": "string", "format": "date-time" },
+    "repository": { "type": "string", "format": "uri" },
+    "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "dirty": { "type": "boolean" },
+    "environment": { "$ref": "#/$defs/environment" },
+    "protocol": { "$ref": "#/$defs/protocol" },
+    "identities": { "$ref": "#/$defs/identities" },
+    "outcome": { "$ref": "#/$defs/outcome" },
+    "metrics": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/metric" }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/artifact" }
+    },
+    "notes": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "$defs": {
+    "nonEmpty": { "type": "string", "minLength": 1 },
+    "sha256": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "endpointId": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tier", "os", "arch", "kernel", "rustc", "hosts", "cpu", "memory_bytes", "topology"],
+      "properties": {
+        "tier": { "enum": ["ci", "local", "physical", "miren"] },
+        "os": { "$ref": "#/$defs/nonEmpty" },
+        "arch": { "$ref": "#/$defs/nonEmpty" },
+        "kernel": { "$ref": "#/$defs/nonEmpty" },
+        "rustc": { "$ref": "#/$defs/nonEmpty" },
+        "hosts": { "type": "integer", "minimum": 1 },
+        "cpu": { "$ref": "#/$defs/nonEmpty" },
+        "memory_bytes": { "type": "integer", "minimum": 0 },
+        "topology": { "$ref": "#/$defs/nonEmpty" },
+        "baseline_rtt_us": { "type": "number", "minimum": 0 },
+        "baseline_throughput_mbps": { "type": "number", "minimum": 0 }
+      }
+    },
+    "protocol": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "revision", "workload", "implementation", "transport", "wire", "trials", "iterations", "warmups", "parameters"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmpty" },
+        "revision": { "$ref": "#/$defs/nonEmpty" },
+        "workload": { "$ref": "#/$defs/nonEmpty" },
+        "implementation": { "$ref": "#/$defs/nonEmpty" },
+        "transport": { "$ref": "#/$defs/nonEmpty" },
+        "wire": { "$ref": "#/$defs/nonEmpty" },
+        "trials": { "type": "integer", "minimum": 1 },
+        "iterations": { "type": "integer", "minimum": 1 },
+        "warmups": { "type": "integer", "minimum": 0 },
+        "parameters": { "type": "object" }
+      }
+    },
+    "identities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["conversation_identity", "plan_identity"],
+      "properties": {
+        "conversation_identity": { "$ref": "#/$defs/sha256" },
+        "plan_identity": { "$ref": "#/$defs/sha256" },
+        "client_endpoint_identity": { "$ref": "#/$defs/endpointId" },
+        "server_endpoint_identity": { "$ref": "#/$defs/endpointId" }
+      }
+    },
+    "outcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "sessions_attempted", "sessions_completed", "semantic_mismatches", "unauthorized_acceptances"],
+      "properties": {
+        "status": { "enum": ["passed", "failed", "inconclusive"] },
+        "sessions_attempted": { "type": "integer", "minimum": 0 },
+        "sessions_completed": { "type": "integer", "minimum": 0 },
+        "semantic_mismatches": { "type": "integer", "minimum": 0 },
+        "unauthorized_acceptances": { "type": "integer", "minimum": 0 },
+        "failure": { "type": "string" }
+      }
+    },
+    "metric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "unit", "sample_count", "minimum", "median", "p95", "p99", "maximum", "mean"],
+      "properties": {
+        "name": { "$ref": "#/$defs/nonEmpty" },
+        "unit": { "$ref": "#/$defs/nonEmpty" },
+        "sample_count": { "type": "integer", "minimum": 1 },
+        "minimum": { "type": "number", "minimum": 0 },
+        "median": { "type": "number", "minimum": 0 },
+        "p95": { "type": "number", "minimum": 0 },
+        "p99": { "type": "number", "minimum": 0 },
+        "maximum": { "type": "number", "minimum": 0 },
+        "mean": { "type": "number", "minimum": 0 },
+        "median_ci95_low": { "type": "number", "minimum": 0 },
+        "median_ci95_high": { "type": "number", "minimum": 0 }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "path", "sha256"],
+      "properties": {
+        "kind": { "$ref": "#/$defs/nonEmpty" },
+        "path": { "$ref": "#/$defs/nonEmpty" },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    }
+  }
+}
