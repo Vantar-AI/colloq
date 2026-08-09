@@ -13,6 +13,8 @@ use std::sync::{
     atomic::{AtomicBool, Ordering},
     mpsc::{self, Receiver, Sender},
 };
+#[cfg(test)]
+use std::sync::{Mutex, MutexGuard, OnceLock};
 use std::time::Duration;
 use thiserror::Error;
 
@@ -28,6 +30,18 @@ const MAX_ENVELOPE_BYTES: usize = 16 * 1024 * 1024;
 const MAX_SESSION_PREFACE_BYTES: usize = 64 * 1024;
 const SESSION_REJECTED: u8 = 0;
 const SESSION_ACCEPTED: u8 = 1;
+
+// The one-shot QUIC and Iroh harnesses each own Tokio runtimes and UDP endpoints. Serializing their
+// lifecycle tests prevents an endpoint from being starved by several concurrent runtime teardowns;
+// sustained network concurrency belongs in a long-lived-runtime test instead.
+#[cfg(test)]
+pub(crate) fn network_test_guard() -> MutexGuard<'static, ()> {
+    static GUARD: OnceLock<Mutex<()>> = OnceLock::new();
+    GUARD
+        .get_or_init(|| Mutex::new(()))
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+}
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -1243,8 +1257,6 @@ impl Transport for QuicTransport {
         }
         let send = &mut self.send;
         let receive = &mut self.receive;
-        // Both roles publish their FIN before waiting for the peer's FIN. Reversing this order can
-        // leave them waiting until QUIC's idle timeout under scheduler pressure.
         match role {
             "client" => {
                 self.runtime
@@ -1255,11 +1267,6 @@ impl Transport for QuicTransport {
                         read_quic_close_marker(receive).await
                     })
                     .map_err(RuntimeError::Quic)?;
-                send.finish()
-                    .map_err(|error| RuntimeError::Quic(error.to_string()))?;
-                self.runtime
-                    .block_on(receive.read_to_end(0))
-                    .map_err(|error| RuntimeError::Quic(error.to_string()))?;
             }
             "server" => {
                 self.runtime
@@ -1270,11 +1277,6 @@ impl Transport for QuicTransport {
                             .map_err(|error| error.to_string())
                     })
                     .map_err(RuntimeError::Quic)?;
-                send.finish()
-                    .map_err(|error| RuntimeError::Quic(error.to_string()))?;
-                self.runtime
-                    .block_on(receive.read_to_end(0))
-                    .map_err(|error| RuntimeError::Quic(error.to_string()))?;
             }
             role => {
                 return Err(RuntimeError::Quic(format!(
@@ -1282,6 +1284,10 @@ impl Transport for QuicTransport {
                 )));
             }
         }
+        // Reading the peer's explicit Eve close marker acknowledges application completion. The
+        // peer may release its one-shot endpoint immediately afterward, so publishing our FIN is
+        // best-effort and cannot invalidate an already acknowledged Eve close handshake.
+        let _ = send.finish();
         self.finished = true;
         Ok(())
     }
@@ -1976,8 +1982,11 @@ pub fn run_quic_plan_demo_with_encoding(
                 WireEncoding::Reference => listener.accept()?,
                 WireEncoding::Compact => listener.accept_compact(plan)?,
             };
-            transport.establish_session(plan, "server", "client")?;
+            transport
+                .establish_session(plan, "server", "client")
+                .map_err(|error| RuntimeError::Quic(format!("server session: {error}")))?;
             run_generate_server_plan(plan, &mut transport, token_limit)
+                .map_err(|error| RuntimeError::Quic(format!("server execution: {error}")))
         });
         let client_worker = scope.spawn(move || {
             let mut transport = match encoding {
@@ -1986,15 +1995,20 @@ pub fn run_quic_plan_demo_with_encoding(
                     QuicTransport::connect_compact(address, &trusted_certificate, plan)?
                 }
             };
-            transport.establish_session(plan, "client", "server")?;
+            transport
+                .establish_session(plan, "client", "server")
+                .map_err(|error| RuntimeError::Quic(format!("client session: {error}")))?;
             run_generate_client_plan(plan, &mut transport, &prompt, cancel_after)
+                .map_err(|error| RuntimeError::Quic(format!("client execution: {error}")))
         });
         let client = client_worker
             .join()
-            .map_err(|_| RuntimeError::WorkerPanicked)??;
+            .map_err(|_| RuntimeError::WorkerPanicked)?
+            .map_err(|error| RuntimeError::Quic(format!("demo client: {error}")))?;
         let server = server_worker
             .join()
-            .map_err(|_| RuntimeError::WorkerPanicked)??;
+            .map_err(|_| RuntimeError::WorkerPanicked)?
+            .map_err(|error| RuntimeError::Quic(format!("demo server: {error}")))?;
         Ok::<_, RuntimeError>((client, server))
     })?;
     let transport_plan = match encoding {
@@ -2142,18 +2156,6 @@ fn demo_report(
 mod tests {
     use super::*;
     use crate::plan::EvePlan;
-    use std::sync::{Mutex, MutexGuard, OnceLock};
-
-    // Each QUIC demo owns and tears down its own Tokio runtime and endpoints. Keep
-    // those lifecycle tests from overlapping; independent connection concurrency belongs in a
-    // long-lived runtime test rather than this one-conversation harness.
-    fn quic_test_guard() -> MutexGuard<'static, ()> {
-        static GUARD: OnceLock<Mutex<()>> = OnceLock::new();
-        GUARD
-            .get_or_init(|| Mutex::new(()))
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-    }
 
     fn conversation() -> Conversation {
         serde_json::from_str(include_str!("../examples/generate.eveconv.json")).unwrap()
@@ -2444,7 +2446,7 @@ mod tests {
 
     #[test]
     fn quic_plan_runs_the_same_conversation_to_completion() {
-        let _guard = quic_test_guard();
+        let _guard = network_test_guard();
         let report = run_quic_demo(&conversation(), "hello", 3, None).unwrap();
         assert_eq!(report.transport_plan, "quic");
         assert_eq!(report.client.tokens, vec![1, 2, 3]);
@@ -2456,7 +2458,7 @@ mod tests {
 
     #[test]
     fn quic_rejects_an_untrusted_server_certificate() {
-        let _guard = quic_test_guard();
+        let _guard = network_test_guard();
         let listener = QuicListener::bind("127.0.0.1:0".parse().expect("valid address")).unwrap();
         let address = listener.local_addr().unwrap();
         let untrusted_listener =
@@ -2474,7 +2476,7 @@ mod tests {
 
     #[test]
     fn authenticated_quic_preface_rejects_a_different_plan() {
-        let _guard = quic_test_guard();
+        let _guard = network_test_guard();
         let server_plan = PreparedPlan::compile(&conversation()).unwrap();
         let mut edited = conversation();
         if let crate::GlobalState::Send { deadline, .. } = &mut edited.states[0] {
@@ -2508,7 +2510,7 @@ mod tests {
 
     #[test]
     fn all_transport_plans_preserve_the_same_semantic_trace() {
-        let _guard = quic_test_guard();
+        let _guard = network_test_guard();
         let memory = run_memory_demo(&conversation(), "same input", 3, None).unwrap();
         let tcp = run_tcp_demo(&conversation(), "same input", 3, None).unwrap();
         let quic = run_quic_demo(&conversation(), "same input", 3, None).unwrap();
@@ -2530,7 +2532,7 @@ mod tests {
 
     #[test]
     fn compact_wire_preserves_reference_semantics_on_every_transport() {
-        let _guard = quic_test_guard();
+        let _guard = network_test_guard();
         let plan = PreparedPlan::compile(&conversation()).unwrap();
         let reference = run_memory_plan_demo(&plan, "same compact input", 3, None).unwrap();
         let compact_memory = run_memory_plan_demo_with_encoding(

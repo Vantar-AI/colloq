@@ -606,6 +606,7 @@ fn iroh_runtime() -> Result<tokio::runtime::Runtime, RuntimeError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::runtime::network_test_guard;
 
     fn conversation() -> Conversation {
         serde_json::from_str(include_str!("../../examples/generate.eveconv.json")).unwrap()
@@ -613,6 +614,7 @@ mod tests {
 
     #[test]
     fn iroh_runs_the_same_plan_with_mutual_endpoint_identity() {
+        let _guard = network_test_guard();
         let report = run_iroh_demo(&conversation(), "authenticated peers", 3, None).unwrap();
         assert_eq!(report.transport_plan, "iroh");
         assert!(report.semantic_trace_equivalent);
@@ -622,6 +624,7 @@ mod tests {
 
     #[test]
     fn iroh_compact_wire_preserves_semantics() {
+        let _guard = network_test_guard();
         let plan = PreparedPlan::compile(&conversation()).unwrap();
         let report = run_iroh_plan_demo_with_encoding(
             &plan,
@@ -638,6 +641,7 @@ mod tests {
 
     #[test]
     fn iroh_rejects_an_unexpected_authenticated_peer_before_eve_frames() {
+        let _guard = network_test_guard();
         let server =
             IrohNode::bind_direct(SecretKey::generate(), "127.0.0.1:0".parse().unwrap()).unwrap();
         let client =
@@ -649,6 +653,7 @@ mod tests {
 
     #[test]
     fn iroh_server_closes_an_unauthorized_peer_without_stranding_the_client() {
+        let _guard = network_test_guard();
         let plan = PreparedPlan::compile(&conversation()).unwrap();
         let server =
             IrohNode::bind_direct(SecretKey::generate(), "127.0.0.1:0".parse().unwrap()).unwrap();
@@ -674,6 +679,7 @@ mod tests {
 
     #[test]
     fn iroh_identity_can_be_persisted_and_restored() {
+        let _guard = network_test_guard();
         let node =
             IrohNode::bind_direct(SecretKey::generate(), "127.0.0.1:0".parse().unwrap()).unwrap();
         let id = node.id();
