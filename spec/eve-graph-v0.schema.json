@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/Vantar-AI/eve/blob/main/spec/eve-graph-v0.schema.json",
+  "$id": "https://vantar.xyz/eve/spec/eve-graph-v0.schema.json",
   "title": "Eve Graph v0 experimental interchange",
   "description": "An unstable interchange format for the graph-native Eve language kernel.",
   "type": "object",

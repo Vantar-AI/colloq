@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/Vantar-AI/eve/blob/main/spec/eve-conversation-v0.schema.json",
+  "$id": "https://vantar.xyz/eve/spec/eve-conversation-v0.schema.json",
   "title": "Eve Conversation v0 experimental interchange",
   "description": "A global two-role conversation that can be projected into local endpoint machines.",
   "type": "object",

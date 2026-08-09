@@ -9,6 +9,8 @@ This directory contains machine-readable experiments for the canonical Eve Graph
 - [`eve-plan-v0.schema.json`](eve-plan-v0.schema.json) — compiled two-endpoint execution-plan artifact, including the optional compact transition dictionary used to start reusable sessions.
 - [`eve-session-v0.schema.json`](eve-session-v0.schema.json) — plan-bound network preface exchanged before reference or compact Eve frames.
 
+Published schemas are available at `https://vantar.xyz/eve/spec/<schema-file>`.
+
 The JSON representation is an interchange and debugging format. It is not yet the canonical binary encoding and must not be treated as stable.
 
 The original Eve Graph v0 schema predates the conversation-state model in [RFC-0002](../rfcs/0002-conversation-is-the-computation.md). The separate Conversation v0 experiment now represents two roles, sends, choices, loops, cancellation, declared failures, success terminals, and failure terminals without pretending the broader Graph schema is already stable. In v0, an `on_failure` edge must target a terminal `fail` state carrying the same declared failure ID; retry and recovery graphs are deferred.
