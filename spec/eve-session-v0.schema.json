@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://vantar.ai/eve/spec/eve-session-v0.schema.json",
+  "$id": "https://vantar.xyz/eve/spec/eve-session-v0.schema.json",
   "title": "Eve Session Preface v0",
   "type": "object",
   "additionalProperties": false,

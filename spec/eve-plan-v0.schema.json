@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://vantar.ai/eve/spec/eve-plan-v0.schema.json",
+  "$id": "https://vantar.xyz/eve/spec/eve-plan-v0.schema.json",
   "title": "Eve Plan v0",
   "type": "object",
   "additionalProperties": false,
