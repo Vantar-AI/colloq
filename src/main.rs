@@ -1,9 +1,12 @@
 use clap::{Parser, Subcommand, ValueEnum};
 use eve::benchmark::run_reference_benchmark;
+use eve::deploy::{MirenOptions, render_miren_bundle};
+use eve::graph::{AutomergeDraft, DraftScalarPatch};
 use eve::plan::{EvePlan, PreparedPlan};
 use eve::runtime::{
     FaultOperation, FaultPlan, QuicListener, QuicTransport, TcpTransport, WireEncoding,
-    run_generate_client_plan, run_generate_server_plan, run_memory_demo, run_memory_fault_demo,
+    run_generate_client_plan, run_generate_server_plan, run_iroh_demo,
+    run_iroh_plan_demo_with_encoding, run_memory_demo, run_memory_fault_demo,
     run_memory_plan_demo_with_encoding, run_quic_demo, run_quic_plan_demo_with_encoding,
     run_tcp_demo, run_tcp_plan_demo_with_encoding,
 };
@@ -45,6 +48,51 @@ enum Command {
         conversation: PathBuf,
         #[arg(long, default_value = "build/generate.eveplan.json")]
         out: PathBuf,
+    },
+    /// Create an Automerge-backed collaborative draft from a validated Eve conversation.
+    DraftCreate {
+        conversation: PathBuf,
+        #[arg(long, default_value = "build/generate.evedraft")]
+        out: PathBuf,
+    },
+    /// Apply one optimistic scalar JSON-pointer edit to an Automerge draft.
+    DraftPatch {
+        draft: PathBuf,
+        /// JSON pointer such as /module/semantic_version.
+        #[arg(long)]
+        pointer: String,
+        /// JSON scalar, for example '"0.2.0"', true, or 10.
+        #[arg(long)]
+        value: String,
+        /// Write to another draft file instead of updating the input file.
+        #[arg(long)]
+        out: Option<PathBuf>,
+    },
+    /// Reject conflicts, validate the materialized graph, and emit canonical Eve artifacts.
+    DraftPromote {
+        draft: PathBuf,
+        #[arg(long, default_value = "build/promoted.eveconv.json")]
+        conversation_out: PathBuf,
+        #[arg(long, default_value = "build/promoted.eveplan.json")]
+        plan_out: PathBuf,
+    },
+    /// Generate a Miren app manifest and pinned Rust container for an Eve server.
+    EmitMiren {
+        #[arg(default_value = "examples/generate.eveconv.json")]
+        conversation: PathBuf,
+        #[arg(long)]
+        app_name: Option<String>,
+        #[arg(long, default_value_t = 7878)]
+        port: u16,
+        #[arg(long, default_value_t = 3)]
+        tokens: usize,
+        #[arg(long, default_value_t = 1)]
+        instances: usize,
+        #[arg(long, value_enum, default_value_t = WireEncodingArg::Compact)]
+        wire: WireEncodingArg,
+        /// Keep the service internal to Miren instead of allocating a node port.
+        #[arg(long)]
+        internal_only: bool,
     },
     /// Execute a previously compiled Eve Plan without re-projecting the conversation.
     RunPlan {
@@ -129,7 +177,7 @@ enum Command {
         #[arg(long, default_value_t = 20)]
         warmup: usize,
     },
-    /// Serve one projected endpoint over TCP and exit after one conversation.
+    /// Serve a projected endpoint over TCP.
     Serve {
         #[arg(default_value = "examples/generate.eveconv.json")]
         conversation: PathBuf,
@@ -140,6 +188,9 @@ enum Command {
         /// Bind the session to the reference or compact wire encoding.
         #[arg(long, value_enum, default_value_t = WireEncodingArg::Reference)]
         wire: WireEncodingArg,
+        /// Continue accepting conversations instead of exiting after the first session.
+        #[arg(long)]
+        forever: bool,
     },
     /// Connect the client endpoint to an Eve TCP server.
     Connect {
@@ -199,6 +250,7 @@ enum DemoTransport {
     Memory,
     Tcp,
     Quic,
+    Iroh,
 }
 
 #[derive(Clone, Debug, ValueEnum)]
@@ -278,6 +330,85 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 out.display()
             );
         }
+        Command::DraftCreate { conversation, out } => {
+            let conversation: Conversation = read_json(&conversation)?;
+            validate(&conversation)?;
+            let mut draft = AutomergeDraft::from_conversation(&conversation)?;
+            write_bytes(&out, &draft.save())?;
+            println!("created collaborative Eve draft at {}", out.display());
+        }
+        Command::DraftPatch {
+            draft,
+            pointer,
+            value,
+            out,
+        } => {
+            let bytes = fs::read(&draft)?;
+            let mut document = AutomergeDraft::load(&bytes)?;
+            let heads = document.heads();
+            let value = serde_json::from_str(&value)?;
+            document.apply_scalar_patch(
+                &heads,
+                &DraftScalarPatch {
+                    path: pointer,
+                    value,
+                },
+            )?;
+            let out = out.unwrap_or(draft);
+            write_bytes(&out, &document.save())?;
+            println!("updated collaborative Eve draft at {}", out.display());
+        }
+        Command::DraftPromote {
+            draft,
+            conversation_out,
+            plan_out,
+        } => {
+            let document = AutomergeDraft::load(&fs::read(&draft)?)?;
+            let promoted = document.promote()?;
+            write_bytes(
+                &conversation_out,
+                &serde_json::to_vec_pretty(&promoted.conversation)?,
+            )?;
+            write_bytes(&plan_out, &serde_json::to_vec_pretty(&promoted.plan)?)?;
+            println!(
+                "promoted {} as {} to {} and {}",
+                promoted.conversation.module.id,
+                promoted.conversation_identity,
+                conversation_out.display(),
+                plan_out.display()
+            );
+        }
+        Command::EmitMiren {
+            conversation,
+            app_name,
+            port,
+            tokens,
+            instances,
+            wire,
+            internal_only,
+        } => {
+            let source = conversation.clone();
+            let conversation: Conversation = read_json(&conversation)?;
+            let mut options = MirenOptions::for_conversation(&conversation, source);
+            if let Some(app_name) = app_name {
+                options.app_name = app_name;
+            }
+            options.port = port;
+            options.tokens = tokens;
+            options.instances = instances;
+            options.wire = wire.into();
+            options.node_port = !internal_only;
+            let bundle = render_miren_bundle(&conversation, &options)?;
+            write_bytes(Path::new(".miren/app.toml"), bundle.app_toml.as_bytes())?;
+            write_bytes(
+                Path::new(bundle.dockerfile_path),
+                bundle.dockerfile.as_bytes(),
+            )?;
+            println!(
+                "wrote .miren/app.toml and {} for plan {}",
+                bundle.dockerfile_path, bundle.plan_identity
+            );
+        }
         Command::RunPlan {
             plan,
             transport,
@@ -298,6 +429,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
                 DemoTransport::Quic => {
                     run_quic_plan_demo_with_encoding(&plan, &prompt, tokens, cancel_after, wire)?
+                }
+                DemoTransport::Iroh => {
+                    run_iroh_plan_demo_with_encoding(&plan, &prompt, tokens, cancel_after, wire)?
                 }
             };
             println!("{}", serde_json::to_string_pretty(&report)?);
@@ -329,6 +463,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
                 DemoTransport::Tcp => run_tcp_demo(&conversation, &prompt, tokens, cancel_after)?,
                 DemoTransport::Quic => run_quic_demo(&conversation, &prompt, tokens, cancel_after)?,
+                DemoTransport::Iroh => run_iroh_demo(&conversation, &prompt, tokens, cancel_after)?,
             };
             println!("{}", serde_json::to_string_pretty(&report)?);
         }
@@ -376,21 +511,28 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             listen,
             tokens,
             wire,
+            forever,
         } => {
             let conversation: Conversation = read_json(&conversation)?;
             let plan = PreparedPlan::compile(&conversation)?;
+            verify_deployment_identity(&plan)?;
             let wire = wire.into();
             let listener = TcpListener::bind(listen)?;
             println!("Eve server listening on {listen}");
-            let (stream, peer) = listener.accept()?;
-            println!("accepted Eve endpoint {peer}");
-            let mut transport = match wire {
-                WireEncoding::Reference => TcpTransport::from_stream(stream)?,
-                WireEncoding::Compact => TcpTransport::from_stream_compact(stream, &plan)?,
-            };
-            transport.establish_session(&plan, "server", "client")?;
-            let report = run_generate_server_plan(&plan, &mut transport, tokens)?;
-            println!("{}", serde_json::to_string_pretty(&report)?);
+            loop {
+                let (stream, peer) = listener.accept()?;
+                println!("accepted Eve endpoint {peer}");
+                let mut transport = match wire {
+                    WireEncoding::Reference => TcpTransport::from_stream(stream)?,
+                    WireEncoding::Compact => TcpTransport::from_stream_compact(stream, &plan)?,
+                };
+                transport.establish_session(&plan, "server", "client")?;
+                let report = run_generate_server_plan(&plan, &mut transport, tokens)?;
+                println!("{}", serde_json::to_string_pretty(&report)?);
+                if !forever {
+                    break;
+                }
+            }
         }
         Command::Connect {
             conversation,
@@ -463,7 +605,32 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+fn verify_deployment_identity(plan: &PreparedPlan) -> Result<(), std::io::Error> {
+    for (key, actual) in [
+        ("EVE_PLAN_IDENTITY", plan.plan_identity()),
+        ("EVE_CONVERSATION_IDENTITY", plan.conversation_identity()),
+    ] {
+        if let Ok(expected) = std::env::var(key)
+            && expected != actual
+        {
+            return Err(std::io::Error::other(format!(
+                "{key} mismatch: deployment expects {expected}, compiled conversation produced {actual}"
+            )));
+        }
+    }
+    Ok(())
+}
+
 fn read_json<T: DeserializeOwned>(path: &Path) -> Result<T, Box<dyn std::error::Error>> {
     let input = fs::read(path)?;
     Ok(serde_json::from_slice(&input)?)
+}
+
+fn write_bytes(path: &Path, bytes: &[u8]) -> Result<(), std::io::Error> {
+    if let Some(parent) = path.parent()
+        && !parent.as_os_str().is_empty()
+    {
+        fs::create_dir_all(parent)?;
+    }
+    fs::write(path, bytes)
 }

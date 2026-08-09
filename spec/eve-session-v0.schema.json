@@ -30,6 +30,16 @@
     },
     "wire": {
       "enum": ["reference", "compact"]
+    },
+    "endpoint_identity": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Authenticated transport identity claimed by the sender when the transport exposes one."
+    },
+    "channel_binding": {
+      "type": "string",
+      "pattern": "^tls-exporter:[0-9a-f]{64}$",
+      "description": "Per-connection TLS exporter binding that prevents preface replay on a different channel."
     }
   },
   "$defs": {

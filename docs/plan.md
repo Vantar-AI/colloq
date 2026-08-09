@@ -36,11 +36,12 @@ cargo run -- run-plan build/generate.eveplan.json \
   --transport memory --tokens 3
 ```
 
-TCP and QUIC use the same plan:
+TCP, QUIC, and Iroh use the same plan:
 
 ```bash
 cargo run -- run-plan build/generate.eveplan.json --transport tcp
 cargo run -- run-plan build/generate.eveplan.json --transport quic
+cargo run -- run-plan build/generate.eveplan.json --transport iroh
 ```
 
 Select the plan-backed compact encoding without changing the conversation:
@@ -62,7 +63,7 @@ The distinction matters:
 
 The dictionary deduplicates matching endpoint actions, sorts them deterministically by state and semantic operation, and assigns dense `u16` IDs starting at one. The sender maps an already checked semantic frame to an ID. The receiver resolves that ID, reconstructs the full semantic frame, and runs the unchanged endpoint checks. Reference and compact sessions must produce identical semantic traces.
 
-Compact mode requires both endpoints to possess the same plan. Before TCP or QUIC frame zero, a versioned session preface checks the conversation identity, plan identity, peer role, and exact encoding with no downgrade fallback. QUIC carries that binding inside its server-authenticated TLS connection; TCP performs only unauthenticated equality checks. See [Eve Wire v0](wire.md) for the exact envelope and trust boundary.
+Compact mode requires both endpoints to possess the same plan. Before TCP, QUIC, or Iroh frame zero, a versioned session preface checks the conversation identity, plan identity, peer role, and exact encoding with no downgrade fallback. QUIC carries that binding inside its server-authenticated TLS connection; Iroh binds it to both authenticated endpoint identities and the concrete TLS connection; TCP performs only unauthenticated equality checks. See [Eve Wire v0](wire.md) for the exact envelope and trust boundary.
 
 ## Measured boundary
 

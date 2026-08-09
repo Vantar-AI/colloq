@@ -17,7 +17,10 @@ Eve should reuse existing work and earn every new abstraction. No single compari
 | GPU/server communication | NCCL, NVSHMEM, UCX, libfabric | Optimized transports and collective implementations | Compile declarative constraints into these mechanisms |
 | RPC and schemas | gRPC/Protobuf, Cap'n Proto, FlatBuffers | Versioned schemas and efficient encoding | Streams with placement, effects, bulk tensors, and runtime planning |
 | Dataflow systems | Ray, Flink, Naiad/Timely Dataflow | Distributed scheduling, backpressure, state, recovery | A compiled language with explicit effects and governed program variation |
+| Local-first collaboration | Automerge | Convergent change history and transport-independent document synchronization | Require a conflict-rejecting Eve promotion gate before draft state becomes executable meaning |
+| Peer connectivity | Iroh | Stable endpoint keys, encrypted QUIC streams, direct connections, discovery, and relay fallback | Bind authenticated connectivity to Eve plans, roles, encodings, and governed authorization |
 | Service orchestration | Kubernetes, Nomad | Resource inventory, isolation, lifecycle management | Semantic knowledge of models, tensors, streams, and evaluation gates |
+| Application deployment | Miren | Build, placement, restart, overlay networking, and workload identity | Treat deployment as a replaceable adapter for identified Eve endpoint plans |
 | Programmable networks | P4, eBPF | Safe specialization close to the data plane | An optional lowering target rather than the application language itself |
 | Agent protocols | MCP, A2A | Capability discovery and higher-level interoperability | Eve targets execution and data movement inside distributed AI systems |
 | Equality graphs | egg, egglog | Represent many equivalent programs and extract by cost | Separate proved/validated optimization from behavior-changing evolution |
@@ -54,3 +57,6 @@ If this combination can be expressed cleanly as libraries and configuration in a
 - [PyTorch DTensor](https://docs.pytorch.org/docs/stable/distributed.tensor.html)
 - [Model Context Protocol](https://modelcontextprotocol.io/)
 - [Agent2Agent Protocol](https://a2a-protocol.org/)
+- [Automerge](https://automerge.org/)
+- [Iroh](https://www.iroh.computer/)
+- [Miren](https://miren.dev/)

@@ -14,7 +14,7 @@ Canonical semantic Eve Conversation Graph
 Signed execution plan
     ├── endpoint machines: one local protocol state machine per role
     ├── compute backends: native, accelerator DSLs, Nuro, framework interop
-    ├── transports: shared memory, QUIC, TCP, RDMA, collective libraries
+    ├── transports: shared memory, QUIC, Iroh, TCP, RDMA, collective libraries
     ├── storage: local, object, distributed log
     └── control plane: discovery, identity, policy, rollout
 ```
@@ -88,6 +88,9 @@ The first Rust implementation covers the top of this pipeline:
 
 ```text
 Conversation v0 JSON
+    ├── direct import
+    └── Automerge collaborative draft
+          → conflict-rejecting promotion gate
     → representation and semantic validation
     → global conversation state graph
     → client endpoint machine + server endpoint machine
@@ -97,10 +100,12 @@ Conversation v0 JSON
       + strict plan/role/encoding preface on network connections
        ├── memory plan
        ├── length-delimited TCP plan
-       └── TLS-authenticated QUIC plan
+       ├── TLS-authenticated QUIC plan
+       └── mutually authenticated Iroh plan
+    → optional Miren manifest + pinned container adapter
     → successful trace equivalence or declared terminal failure
 ```
 
-Each endpoint checks the conversation name, experimental semantic hash, expected state, and sequence before accepting a frame. The compiler validates and projects once into an Eve Plan with its own deterministic identity; sessions share immutable projected graphs. Memory, TCP, and QUIC can serialize either the self-describing reference envelope or a plan-backed compact envelope containing only transition ID, sequence, and optional payload. TCP and QUIC first exchange a strict session preface binding plan identity, roles, and exact encoding. Both encodings reconstruct the same semantic trace. The reference `Generate` workload completes normally, through cancellation, or at declared closed/timeout/reset/unreachable/uncertain terminal states without transport-specific application logic. A deterministic wrapper can fail an exact role, transport operation, and occurrence for repeatable, asymmetric counterexamples.
+Each endpoint checks the conversation name, experimental semantic hash, expected state, and sequence before accepting a frame. The compiler validates and projects once into an Eve Plan with its own deterministic identity; sessions share immutable projected graphs. Memory, TCP, QUIC, and Iroh can serialize either the self-describing reference envelope or a plan-backed compact envelope containing only transition ID, sequence, and optional payload. Network peers first exchange a strict session preface binding plan identity, roles, and exact encoding. Iroh additionally binds both authenticated endpoint identities and the concrete TLS connection. Both encodings reconstruct the same semantic trace. The reference `Generate` workload completes normally, through cancellation, or at declared closed/timeout/reset/unreachable/uncertain terminal states without transport-specific application logic. A deterministic wrapper can fail an exact role, transport operation, and occurrence for repeatable, asymmetric counterexamples.
 
-This runtime remains an experiment rather than a deployment substrate. It is blocking, supports two static roles, and sends JSON payloads. QUIC encrypts the connection, authenticates the server through an explicitly pinned certificate, and protects the plan preface from an on-path downgrade. Persistent identities, client authentication, authorization, replay-resistant freshness, flow control, structural payload validation from Eve type definitions, deadline enforcement, recovery, and distributed failure agreement remain unimplemented. The [compact-wire measurement](benchmark.md) shows a 1.32× isolated transition improvement and a 1.11× warm-workload improvement, while total overhead remains above target.
+This runtime remains an experiment rather than a general deployment substrate. It is blocking, supports two static roles, and sends JSON payloads. QUIC authenticates a pinned ephemeral server certificate; Iroh authenticates persistent keys on both endpoints. Automerge contributes draft collaboration without bypassing Eve validation, and Miren packages the current TCP server as a testbed rather than redefining placement semantics. Identity admission, authorization, key rotation, replay-resistant freshness, flow control, structural payload validation from Eve type definitions, deadline enforcement, recovery, and distributed failure agreement remain unimplemented. The [compact-wire measurement](benchmark.md) shows a 1.32× isolated transition improvement and a 1.11× warm-workload improvement, while total overhead remains above target. See [pluggable substrates](substrates.md) for the exact boundary.

@@ -5,6 +5,8 @@ use std::fmt;
 use thiserror::Error;
 
 pub mod benchmark;
+pub mod deploy;
+pub mod graph;
 pub mod plan;
 pub mod runtime;
 

@@ -21,7 +21,7 @@ The receiving endpoint independently checks all envelope fields and the permitte
 
 Reference mode serializes that complete semantic envelope. Compact mode resolves the checked frame through the plan's deterministic transition dictionary and sends `{t, q, p?}`: transition ID, sequence, and optional data payload. The receiver reconstructs the complete envelope from its verified plan before running the same checks. See [Eve Wire v0](wire.md).
 
-Before TCP or QUIC frame zero, both roles exchange an Eve Session Preface containing session version, conversation and plan identity, role, and exact encoding. Either side aborts on any mismatch; compact transports refuse frame I/O until the preface succeeds.
+Before TCP, QUIC, or Iroh frame zero, both roles exchange an Eve Session Preface containing session version, conversation and plan identity, role, and exact encoding. Either side aborts on any mismatch; network transports refuse frame I/O until the preface succeeds. Iroh sessions additionally bind the authenticated endpoint IDs and a TLS exporter from the concrete connection.
 
 The SHA-256 value is an experimental semantic identity. It excludes the schema path and annotations, but it is not yet an Eve `ContentId`; canonicalization fixtures and normalization rules must exist before that name is justified.
 
@@ -81,7 +81,29 @@ The generated private key remains in the server process. The client pins that se
 
 After the Eve conversation reaches `end`, the QUIC plan performs a role-ordered close handshake outside the semantic trace. This ensures each process observes the peer's completion before either endpoint releases its QUIC connection.
 
-Each report includes a semantic trace hash. Equivalent client and server hashes mean both independently projected endpoints observed the same ordered protocol transitions. Tests require reference and compact memory, TCP, and QUIC sessions to produce the same hash for identical successful inputs.
+### Iroh
+
+The Iroh plan carries the same reference or compact envelope over a bidirectional QUIC stream with
+ALPN `eve/0.1`. Each node is created from a persistent Ed25519 secret key, and the caller supplies
+the exact remote Endpoint ID it expects. A different peer is rejected before Eve session setup.
+
+```bash
+cargo run -- demo --transport iroh --tokens 3
+cargo run -- run-plan build/generate.eveplan.json \
+  --transport iroh --wire compact --tokens 3
+```
+
+The reference demo uses direct loopback addresses and disables relays, matching a routable data
+center network. The library also exposes Iroh's discovery, NAT-traversal, and relay-capable default
+endpoint. During session setup, each peer checks that the preface's endpoint identity matches the
+key authenticated by Iroh and that its `channel_binding` matches a TLS exporter derived with the
+plan identity. A copied preface therefore cannot authenticate a different connection.
+
+This supplies mutual peer authentication, not policy authorization. The prototype does not yet
+load keys and addresses through separate-process CLI commands or define which endpoint key may
+assume which Eve role.
+
+Each report includes a semantic trace hash. Equivalent client and server hashes mean both independently projected endpoints observed the same ordered protocol transitions. Tests require reference and compact memory, TCP, QUIC, and Iroh sessions to produce the same hash for identical successful inputs.
 
 ## Typed failure and deterministic faults
 
@@ -129,15 +151,17 @@ The prototype currently guarantees only:
 - explicit selection and cancellation transitions;
 - declared terminal transport-failure transitions;
 - deterministic role/operation/occurrence fault injection;
-- equivalent successful semantic traces across both encodings and all three implemented transports;
+- equivalent successful semantic traces across both encodings and all four implemented transports;
 - explicit asymmetric timeout/uncertainty observations under deterministic faults;
 - QUIC transport encryption and pinned server authentication;
 - binding of the QUIC server's plan preface to that authenticated connection;
-- rejection of a QUIC server presenting an untrusted certificate.
+- rejection of a QUIC server presenting an untrusted certificate;
+- persistent mutually authenticated Iroh endpoint identities;
+- Iroh session-preface binding to the concrete TLS connection and plan identity.
 
 It does not yet provide:
 
-- persistent server identity, client authentication, mutual TLS, or authorization;
+- common identity provisioning, role authorization, rotation, or revocation across transports;
 - asynchronous multiplexing or flow control;
 - retries, reconnects, recovery branches, or distributed failure agreement;
 - enforcement of declared deadlines;
@@ -147,15 +171,15 @@ It does not yet provide:
 - replay-resistant session nonces, resumption, or persistent connection pooling;
 - a binary payload codec or zero-copy performance architecture.
 
-The TCP server listens on loopback by default because that wire plan is plaintext and unauthenticated. QUIC is encrypted, but its generated certificate is suitable only for this explicit pinning experiment.
+The TCP server listens on loopback by default because that wire plan is plaintext and unauthenticated. QUIC is encrypted, but its generated certificate is suitable only for this explicit pinning experiment. Iroh authenticates both endpoint keys, while admission and role authorization remain the caller's responsibility.
 
 ## Current result and next experiment
 
-Memory, TCP, and QUIC preserve the same successful semantic trace across reference and compact encodings. Independent TCP and QUIC processes now exchange the compact representation after a strict plan-bound preface. QUIC authenticates the server and binds its declared plan to the pinned TLS connection; a wrong certificate or different plan is rejected before frame zero. Conversations compile into reusable, identified endpoint plans with deterministic transition dictionaries. Compact encoding improved the checked-transition median by 1.32× and the complete warm exchange by 1.11×, but remains 1.51× the hand-written baseline. Deterministic failures preserve different local timeout and uncertainty observations.
+Memory, TCP, QUIC, and Iroh preserve the same successful semantic trace across reference and compact encodings. Independent TCP and QUIC processes exchange the compact representation after a strict plan-bound preface. QUIC authenticates the server and binds its declared plan to the pinned TLS connection; Iroh authenticates both persistent endpoint keys and binds the session to its concrete TLS connection. Conversations compile into reusable, identified endpoint plans with deterministic transition dictionaries. Compact encoding improved the checked-transition median by 1.32× and the complete warm exchange by 1.11×, but remains 1.51× the hand-written baseline. Deterministic failures preserve different local timeout and uncertainty observations.
 
 The next runtime experiment should:
 
-1. Add client authentication, authorization, and replay-resistant freshness to the server-authenticated QUIC preface.
+1. Define endpoint-key admission, role authorization, rotation, and replay-resistant freshness across QUIC and Iroh.
 2. Measure preface exchange latency, protocol-machine checks, transition lookup, allocation, encoding, channel transfer, and scheduling separately.
 3. Add deadline enforcement and recovery transitions rather than terminal failures only.
 4. Exercise asymmetric faults and the conventional baseline across independent processes and a controlled multi-node testbed.

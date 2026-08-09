@@ -16,6 +16,12 @@ use std::sync::{
 use std::time::Duration;
 use thiserror::Error;
 
+mod iroh;
+pub use self::iroh::{
+    EVE_IROH_ALPN, IrohNode, IrohTransport, run_iroh_demo, run_iroh_plan_demo,
+    run_iroh_plan_demo_with_encoding,
+};
+
 pub const WIRE_FORMAT: &str = "0.1.0";
 pub const SESSION_FORMAT: &str = "0.1.0";
 const MAX_ENVELOPE_BYTES: usize = 16 * 1024 * 1024;
@@ -61,6 +67,12 @@ pub struct SessionPreface {
     pub plan_identity: String,
     pub role: String,
     pub wire: WireEncoding,
+    /// Authenticated transport identity claimed by the sender, when the transport exposes one.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub endpoint_identity: Option<String>,
+    /// TLS exporter binding that makes a preface unusable on another connection.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub channel_binding: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -98,7 +110,7 @@ pub enum RuntimeError {
     Codec(#[from] serde_json::Error),
     #[error("compact Eve Wire error: {0}")]
     CompactWire(String),
-    #[error("{0} compact transport requires a verified Eve session preface")]
+    #[error("{0} transport requires a verified Eve session preface")]
     SessionRequired(&'static str),
     #[error("Eve session mismatch for {field}: expected {expected}, received {actual}")]
     SessionMismatch {
@@ -158,6 +170,10 @@ pub enum RuntimeError {
     WorkerPanicked,
     #[error("QUIC transport error: {0}")]
     Quic(String),
+    #[error("Iroh transport error: {0}")]
+    Iroh(String),
+    #[error("Iroh peer identity mismatch: expected {expected}, authenticated {actual}")]
+    IrohPeerIdentity { expected: String, actual: String },
     #[error("injected failure {failure} for {role} on {operation} operation {occurrence}")]
     InjectedFailure {
         role: String,
@@ -180,7 +196,7 @@ impl RuntimeError {
                 | std::io::ErrorKind::NotConnected => "transport.unreachable",
                 _ => "transport.closed",
             }),
-            Self::TransportClosed(_) | Self::Quic(_) => Some("transport.closed"),
+            Self::TransportClosed(_) | Self::Quic(_) | Self::Iroh(_) => Some("transport.closed"),
             Self::InjectedFailure { failure, .. } => Some(failure),
             _ => None,
         }
@@ -641,6 +657,8 @@ impl SessionPreface {
             plan_identity: plan.plan_identity().to_string(),
             role: role.to_string(),
             wire,
+            endpoint_identity: None,
+            channel_binding: None,
         })
     }
 

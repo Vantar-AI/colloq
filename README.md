@@ -6,14 +6,14 @@
 
 **The graph is the program.** Compile computation, communication, placement, and evolution into one executable plan.
 
-[RFC-0002: Conversation](rfcs/0002-conversation-is-the-computation.md) · [RFC-0001: Kernel](rfcs/0001-eve-language-kernel.md) · [Plan](docs/plan.md) · [Wire](docs/wire.md) · [Runtime](docs/runtime.md) · [Benchmark](docs/benchmark.md) · [Vision](docs/vision.md) · [Architecture](docs/architecture.md) · [Roadmap](docs/roadmap.md)
+[RFC-0002: Conversation](rfcs/0002-conversation-is-the-computation.md) · [RFC-0001: Kernel](rfcs/0001-eve-language-kernel.md) · [Substrates](docs/substrates.md) · [Plan](docs/plan.md) · [Wire](docs/wire.md) · [Runtime](docs/runtime.md) · [Benchmark](docs/benchmark.md) · [Vision](docs/vision.md) · [Architecture](docs/architecture.md) · [Roadmap](docs/roadmap.md)
 
 </div>
 
 ---
 
 > [!IMPORTANT]
-> Eve is an early research prototype. The repository now contains a conversation checker, endpoint projector, reusable execution-plan compiler, and minimal memory/TCP/QUIC reference runtime. It is not a stable language or production networking system.
+> Eve is an early research prototype. The repository now contains a conversation checker, endpoint projector, reusable execution-plan compiler, Automerge draft gate, memory/TCP/QUIC/Iroh reference runtime, and Miren deployment adapter. It is not a stable language or production networking system.
 
 AI software is becoming distributed, persistent, and increasingly authored by other software. Its unit of execution is no longer a process on one machine: it is a changing graph of models, tools, memory, accelerators, and services spread across a data center.
 
@@ -61,7 +61,7 @@ The compiler would derive compatible endpoint programs, choose transports such a
 
 ## First executable experiment
 
-The Rust prototype implements a deliberately small slice of [RFC-0002](rfcs/0002-conversation-is-the-computation.md): two roles, typed transitions, choices, loops, cancellation, typed terminal failures, endpoint projection, semantic conversation identity, and execution over interchangeable memory, TCP, and authenticated QUIC plans.
+The Rust prototype implements a deliberately small slice of [RFC-0002](rfcs/0002-conversation-is-the-computation.md): two roles, typed transitions, choices, loops, cancellation, typed terminal failures, endpoint projection, semantic conversation identity, and execution over interchangeable memory, TCP, authenticated QUIC, and mutually authenticated Iroh plans.
 
 ```bash
 # Validate one global server conversation
@@ -94,6 +94,18 @@ cargo run -- demo --transport tcp --tokens 3
 # Execute it over authenticated and encrypted loopback QUIC
 cargo run -- demo --transport quic --tokens 3
 
+# Execute it over mutually authenticated Iroh peers
+cargo run -- demo --transport iroh --tokens 3
+
+# Create, structurally edit, and safely promote an Automerge-backed draft
+cargo run -- draft-create examples/generate.eveconv.json
+cargo run -- draft-patch build/generate.evedraft \
+  --pointer /module/semantic_version --value '"0.2.0"'
+cargo run -- draft-promote build/generate.evedraft
+
+# Emit a Miren manifest and pinned container for a multi-node testbed
+cargo run -- emit-miren examples/generate.eveconv.json
+
 # Give each endpoint its honest local view of an asymmetric failure
 cargo run -- fault-demo --fault-role server \
   --fault-operation send --fault-at 2 \
@@ -112,7 +124,7 @@ Projection produces `build/endpoints/client.endpoint.json` and `server.endpoint.
 
 The invalid trace in `examples/traces/generate-wrong-order.invalid.json` demonstrates the central property: a `token` message has the correct data type, but Eve rejects it when the server has not first selected the `token` conversation branch.
 
-The runtime derives both endpoints from the same graph. Reference envelopes carry the experimental SHA-256 semantic identity, expected state, and monotonic sequence. The compact path establishes those semantics from the verified plan, then sends only a transition ID, sequence, and optional payload. TCP and QUIC peers first exchange a fail-closed session preface that binds the version, conversation, plan, roles, and exact encoding. A demo reports whether both roles observed the same semantic trace even when the transport or encoding changes.
+The runtime derives both endpoints from the same graph. Reference envelopes carry the experimental SHA-256 semantic identity, expected state, and monotonic sequence. The compact path establishes those semantics from the verified plan, then sends only a transition ID, sequence, and optional payload. TCP, QUIC, and Iroh peers first exchange a fail-closed session preface that binds the version, conversation, plan, roles, and exact encoding. Iroh additionally binds the authenticated endpoint identities and concrete TLS connection. A demo reports whether both roles observed the same semantic trace even when the transport or encoding changes.
 
 Transport closure, timeout, reset, unreachable, and uncertainty are declared branches rather than untyped Rust errors. The deterministic fault demo can fail an exact role, operation, and one-based occurrence. An injected server timeout can produce `transport.timeout` locally while the peer records `transport.uncertain`; Eve does not pretend a partition gives both roles identical knowledge.
 
@@ -143,6 +155,20 @@ cargo run -- connect-quic --server 127.0.0.1:7879 \
 ```
 
 TCP remains a blocking, plaintext correctness instrument. QUIC adds encryption and pinned server authentication; its plan preface is protected by that TLS connection, but v0 does not authenticate the client. The reference runtime is still blocking and handles one conversation per connection. See [the runtime experiment](docs/runtime.md) for the exact boundary.
+
+## Pluggable collaboration, transport, and deployment
+
+Eve uses three existing systems behind explicit boundaries:
+
+- **Automerge** keeps collaborative draft history. Eve rejects unresolved conflicts and revalidates
+  the materialized graph before assigning executable identities.
+- **Iroh** supplies stable peer identities and encrypted QUIC connectivity. Eve still owns the
+  conversation, plan, role, encoding, and authorization boundary.
+- **Miren** builds and places the current server testbed. Generated manifests bind the expected
+  conversation and plan identities, which the server verifies at startup.
+
+They are experimental adapters, not mandatory language dependencies. See [the complete substrate
+boundary](docs/substrates.md) and [RFC-0003](rfcs/0003-pluggable-substrates.md).
 
 ## Why Eve?
 
@@ -186,6 +212,7 @@ docs/
   vision.md          Long-term thesis and use cases
   design.md          Principles, semantic model, and non-goals
   architecture.md    Proposed compiler and runtime layers
+  substrates.md      Automerge, Iroh, and Miren integration boundaries
   plan.md            Reusable Eve Plan v0 artifact and session boundary
   wire.md            Reference and compact Eve Wire encodings
   runtime.md         Executable memory/TCP reference experiment
@@ -197,6 +224,7 @@ docs/
 rfcs/
   0001-...md         Graph-native language-kernel proposal
   0002-...md         Server conversation and Eve Wire proposal
+  0003-...md         Pluggable substrate experiment
 spec/
   eve-graph-...json  Experimental machine-readable graph schema
   eve-conversation-...json  Executable global conversation schema
@@ -211,9 +239,11 @@ examples/
   evolution.eve      Bounded evolutionary loop
 src/
   benchmark.rs       Eve versus hand-written reference benchmark
+  deploy.rs          Miren manifest and container adapter
+  graph.rs           Automerge draft store and promotion gate
   lib.rs             Checker, endpoint projection, trace validation
   plan.rs            Plan compiler, identity, and artifact verification
-  runtime.rs         Endpoint executor and memory/TCP/QUIC wire plans
+  runtime.rs         Endpoint executor and memory/TCP/QUIC/Iroh wire plans
   main.rs            Experimental `eve` CLI
 benchmarks/
   reference-...json  Checked-in reference measurement

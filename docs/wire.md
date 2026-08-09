@@ -13,7 +13,7 @@ cargo run -- run-plan build/generate.eveplan.json \
   --wire compact --transport quic --tokens 3
 ```
 
-The same `--wire compact` option works with memory and TCP.
+The same `--wire compact` option works with memory, TCP, and Iroh.
 
 ## Compiled transition dictionary
 
@@ -40,11 +40,11 @@ The reference envelope repeats those semantics on every prompt. Compact Eve Wire
 
 For that payload, compact JSON is 34 bytes versus 279 bytes for the reference envelope, an 88% reduction before transport framing. The ratio varies with payload size. Here `t` is the transition ID, `q` is the monotonic sequence, and optional `p` is present only for data payloads. Select and cancel transitions carry no payload. Local fault observations are not transmitted.
 
-The receiver resolves `t` through its verified plan, reconstructs the complete semantic frame and state, then runs the same conversation, identity, sequence, and endpoint-action checks used by the reference path. Execution reports and traces therefore remain representation-independent. Tests require reference and compact sessions over memory, TCP, and QUIC to produce the same semantic trace.
+The receiver resolves `t` through its verified plan, reconstructs the complete semantic frame and state, then runs the same conversation, identity, sequence, and endpoint-action checks used by the reference path. Execution reports and traces therefore remain representation-independent. Tests require reference and compact sessions over memory, TCP, QUIC, and Iroh to produce the same semantic trace.
 
 ## Plan-bound network session
 
-TCP and QUIC exchange a versioned session preface before frame zero. Each side declares:
+TCP, QUIC, and Iroh exchange a versioned session preface before frame zero. Each side declares:
 
 ```json
 {
@@ -57,9 +57,14 @@ TCP and QUIC exchange a versioned session preface before frame zero. Each side d
 }
 ```
 
-Both peers send before receiving, then independently require exact agreement on session version, conversation, semantic identity, plan identity, peer role, and wire encoding. A valid preface produces a one-byte acceptance and waits for peer acceptance; an invalid preface produces a rejection and closes. There is no automatic fallback: `compact` versus `reference` is a fatal mismatch. Compact TCP and QUIC transports reject semantic frames until both sides accept.
+Both peers send before receiving, then independently require exact agreement on session version, conversation, semantic identity, plan identity, peer role, and wire encoding. A valid preface produces a one-byte acceptance and waits for peer acceptance; an invalid preface produces a rejection and closes. There is no automatic fallback: `compact` versus `reference` is a fatal mismatch. Compact TCP, QUIC, and Iroh transports reject semantic frames until both sides accept.
 
-The example preface is 278 bytes plus a four-byte length prefix and one status byte in each direction. The two phases add one application-level validation round trip before the conversation. It is governed by [`eve-session-v0.schema.json`](../spec/eve-session-v0.schema.json).
+The schema also permits optional `endpoint_identity` and `channel_binding` evidence. Iroh requires
+both fields. The endpoint identity must equal the remote key authenticated by Iroh, and the channel
+binding must equal a TLS exporter derived from the concrete connection with the Eve plan identity
+as context. Existing TCP and standalone QUIC sessions omit them.
+
+The base example preface is 278 bytes plus a four-byte length prefix and one status byte in each direction. Iroh prefaces are larger because they carry the two connection bindings. The two phases add one application-level validation round trip before the conversation. It is governed by [`eve-session-v0.schema.json`](../spec/eve-session-v0.schema.json).
 
 Independent processes can now use the compact path directly:
 
@@ -76,6 +81,12 @@ cargo run -- connect-quic --wire compact \
 ## Authentication boundary
 
 On QUIC, the client pins the server certificate before the preface travels inside the authenticated TLS channel. That binds the server's declared role, plan, and encoding to the pinned server key and prevents an on-path downgrade. The v0 QUIC server does not authenticate the client; any client that can reach it may claim the expected public plan and role. Mutual TLS, authorization, per-session nonces, and replay-resistant application proofs remain open.
+
+On Iroh, both peers authenticate the expected persistent Endpoint ID before the bidirectional Eve
+stream is accepted. The exporter binds the preface to that connection. This is mutual
+authentication, but authorization remains separate: the caller still needs a policy deciding
+which key may run which role and plan. Key provisioning, rotation, revocation, and
+replay-resistant application freshness remain open.
 
 TCP performs the same exact mismatch checks, but plaintext TCP does not authenticate either peer and cannot resist an active network attacker. Its preface is a correctness and interoperability guard, not a security boundary.
 

@@ -17,7 +17,7 @@ The original Eve Graph v0 schema predates the conversation-state model in [RFC-0
 
 Eve Plan v0 is a derived artifact, not another semantic source. It carries the experimental conversation identity, deterministic plan identity, projected endpoint graphs, and a compiler-derived compact-wire dictionary. JSON Schema checks its representation; the Rust plan verifier additionally recalculates the digest, validates state and role references, and rejects a noncanonical transition table before sessions are created. Older v0 artifacts may omit `wire`; the runtime derives it when preparing the plan.
 
-Eve Session Preface v0 binds one network connection to a session version, conversation and plan identity, endpoint role, and exact wire encoding. A mismatch aborts before frame zero. On QUIC the client authenticates this server binding through the pinned TLS certificate; TCP provides no cryptographic authentication, and v0 does not authenticate the QUIC client.
+Eve Session Preface v0 binds one network connection to a session version, conversation and plan identity, endpoint role, and exact wire encoding. A mismatch aborts before frame zero. Optional `endpoint_identity` and `channel_binding` fields carry transport-authenticated evidence. The Iroh adapter requires both, checks the mutually authenticated endpoint keys, and verifies a TLS exporter bound to the concrete connection and plan. On the standalone QUIC adapter the client authenticates the server through a pinned certificate; TCP provides no cryptographic authentication, and the standalone QUIC server does not authenticate its client.
 
 ## Canonicalization experiment
 
