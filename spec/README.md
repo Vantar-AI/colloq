@@ -11,6 +11,7 @@ This directory contains machine-readable experiments for the canonical Eve Graph
 - [`eve-node-v0.schema.json`](eve-node-v0.schema.json) — local-only persistent Iroh identity; the secret-bearing file is written mode `0600` on Unix and must never be shared.
 - [`eve-endpoint-v0.schema.json`](eve-endpoint-v0.schema.json) — public direct-address ticket for a persistent endpoint identity.
 - [`eve-authorization-v0.schema.json`](eve-authorization-v0.schema.json) — local allow-list binding authenticated endpoint IDs to exact roles and plan identities.
+- [`eve-evidence-v0.schema.json`](eve-evidence-v0.schema.json) — reproducible correctness, security, or performance result tied to one exact revision and protocol configuration.
 
 Published schemas are available at `https://vantar.xyz/eve/spec/<schema-file>`.
 
@@ -23,6 +24,11 @@ Eve Plan v0 is a derived artifact, not another semantic source. It carries the e
 Eve Session Preface v0 binds one network connection to a session version, conversation and plan identity, endpoint role, and exact wire encoding. A mismatch aborts before frame zero. Optional `endpoint_identity` and `channel_binding` fields carry transport-authenticated evidence. The Iroh adapter requires both, checks the mutually authenticated endpoint keys, and verifies a TLS exporter bound to the concrete connection and plan. On the standalone QUIC adapter the client authenticates the server through a pinned certificate; TCP provides no cryptographic authentication, and the standalone QUIC server does not authenticate its client.
 
 Eve's node artifacts separate three concerns. The secret-bearing node identity proves who the local Iroh endpoint is. The public endpoint ticket says where that identity can be reached. The authorization policy says which authenticated remote identity may assume which Eve role under which exact compiled plan. v0 has no wildcard grants: changing plan semantics requires an explicit new authorization.
+
+Eve Evidence v0 is a research artifact rather than an executable language input. It records the
+revision, environment, pre-registered protocol, semantic identities, correctness outcome,
+measurement aggregates, and digests of raw artifacts. Its reporting rules are defined by
+[RFC-0004](../rfcs/0004-evidence-protocol.md).
 
 ## Canonicalization experiment
 

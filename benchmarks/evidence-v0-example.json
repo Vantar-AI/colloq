@@ -1,0 +1,72 @@
+{
+  "$schema": "../spec/eve-evidence-v0.schema.json",
+  "eve_evidence": "0.1.0",
+  "run_id": "example-local-7c3b462",
+  "started_at": "2026-08-09T12:00:00Z",
+  "finished_at": "2026-08-09T12:00:01Z",
+  "repository": "https://github.com/Vantar-AI/eve",
+  "commit": "7c3b462c32956c7ea79e44da7c303d352d5d4dcd",
+  "dirty": false,
+  "environment": {
+    "tier": "local",
+    "os": "darwin",
+    "arch": "aarch64",
+    "kernel": "Darwin 25.6.0",
+    "rustc": "rustc 1.96.0",
+    "hosts": 1,
+    "cpu": "Apple M4",
+    "memory_bytes": 17179869184,
+    "topology": "single host, in-process channels"
+  },
+  "protocol": {
+    "id": "request-token-done/json-channels/v0",
+    "revision": "rfc-0004-v0",
+    "workload": "W1 Generate",
+    "implementation": "eve-compact-warm",
+    "transport": "memory",
+    "wire": "compact",
+    "trials": 1,
+    "iterations": 500,
+    "warmups": 50,
+    "parameters": {
+      "tokens": 3,
+      "prompt_bytes": 33
+    }
+  },
+  "identities": {
+    "conversation_identity": "sha256:41c84488dc95551605671ea78046cad98bbdeb9c3ede1d73d7303b6f50a7c0d4",
+    "plan_identity": "sha256:5d66c5bdc25454b7542021da3d5c73ff05d4d3757f1ae90738189799d18f10d1"
+  },
+  "outcome": {
+    "status": "failed",
+    "sessions_attempted": 500,
+    "sessions_completed": 500,
+    "semantic_mismatches": 0,
+    "unauthorized_acceptances": 0,
+    "failure": "The 1.51x warm median overhead misses the provisional 1.25x gate."
+  },
+  "metrics": [
+    {
+      "name": "warm whole exchange",
+      "unit": "nanoseconds",
+      "sample_count": 500,
+      "minimum": 62000,
+      "median": 83600,
+      "p95": 154600,
+      "p99": 190000,
+      "maximum": 235000,
+      "mean": 91000
+    }
+  ],
+  "artifacts": [
+    {
+      "kind": "benchmark-report",
+      "path": "benchmarks/compact-wire-v0-reference-2026-08-07-m4.json",
+      "sha256": "be5e9d5f6156d9f5beba1af884bf2b49012e81acbff88bc1e5b62661faee36ea"
+    }
+  ],
+  "notes": [
+    "Example evidence document derived from the checked-in Apple M4 reference report.",
+    "This local microbenchmark cannot support a physical-network performance claim."
+  ]
+}

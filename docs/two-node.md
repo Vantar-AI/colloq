@@ -20,6 +20,16 @@ therefore needs a new explicit authorization.
 
 ## One-machine two-process acceptance run
 
+The repository runs this complete acceptance path on Linux and macOS in CI. Locally:
+
+```bash
+cargo build --locked
+scripts/two-node-smoke.sh
+```
+
+The harness checks a successful Generate session, independently edited draft convergence and
+promotion, private identity file permissions, and fail-closed rejection of an unknown endpoint.
+
 Create two node identities and reciprocal policy for both the Generate workload and the
 `eve.draft-sync` control conversation:
 

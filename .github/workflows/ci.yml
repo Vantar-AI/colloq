@@ -2,14 +2,40 @@ name: CI
 
 on:
   push:
+    branches: [main]
   pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
   test:
+    name: Test (${{ matrix.os }}, Rust ${{ matrix.rust }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        rust: [1.91.0, stable]
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
+
+      - name: Run tests
+        run: cargo test --locked --all-features
+
+  quality:
+    name: Formatting, lint, and release build
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v6
 
@@ -21,25 +47,65 @@ jobs:
         run: cargo fmt --check
 
       - name: Lint
-        run: cargo clippy --all-targets --all-features -- -D warnings
+        run: cargo clippy --locked --all-targets --all-features -- -D warnings
 
-      - name: Test
-        run: cargo test --locked
+      - name: Build release binary
+        run: cargo build --locked --release
+
+  schemas:
+    name: Schemas and generated artifacts
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: dtolnay/rust-toolchain@stable
 
       - name: Install JSON Schema validator
         run: python -m pip install check-jsonschema==0.37.4
 
-      - name: Validate Eve Graph example
-        run: check-jsonschema --schemafile spec/eve-graph-v0.schema.json examples/hello.evegraph.json
-
-      - name: Validate Eve Conversation example
-        run: check-jsonschema --schemafile spec/eve-conversation-v0.schema.json examples/generate.eveconv.json
-
-      - name: Validate Eve Session preface example
-        run: check-jsonschema --schemafile spec/eve-session-v0.schema.json examples/session-preface.compact.json
-
-      - name: Compile and validate Eve Plan
+      - name: Validate schemas against their metaschema
         run: |
-          cargo run --locked -- compile
+          for schema in spec/*.schema.json; do
+            check-jsonschema --check-metaschema "$schema"
+          done
+
+      - name: Validate checked-in examples
+        run: |
+          check-jsonschema --schemafile spec/eve-graph-v0.schema.json examples/hello.evegraph.json
+          check-jsonschema --schemafile spec/eve-conversation-v0.schema.json \
+            examples/generate.eveconv.json examples/draft-sync.eveconv.json
+          check-jsonschema --schemafile spec/eve-session-v0.schema.json \
+            examples/session-preface.compact.json
+          check-jsonschema --schemafile spec/eve-evidence-v0.schema.json \
+            benchmarks/evidence-v0-example.json
+
+      - name: Validate generated plans and trust artifacts
+        run: |
+          cargo run --locked -- compile --out build/generate.eveplan.json
           check-jsonschema --schemafile spec/eve-plan-v0.schema.json build/generate.eveplan.json
+          cargo run --locked -- bootstrap-two-node --out build/two-node
+          check-jsonschema --schemafile spec/eve-node-v0.schema.json \
+            build/two-node/server.evenode.json build/two-node/client.evenode.json
+          check-jsonschema --schemafile spec/eve-authorization-v0.schema.json \
+            build/two-node/server.authorization.json build/two-node/client.authorization.json
           cargo run --locked -- run-plan build/generate.eveplan.json --wire compact --transport memory
+
+  two-node:
+    name: Two-node Iroh smoke (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build Eve
+        run: cargo build --locked
+
+      - name: Exercise independent authenticated processes
+        run: scripts/two-node-smoke.sh

@@ -35,3 +35,4 @@ The implementation may evolve quickly. Accepted semantics require a conformance 
 | [0001](0001-eve-language-kernel.md) | Draft | The Eve language kernel |
 | [0002](0002-conversation-is-the-computation.md) | Draft | The conversation is the computation |
 | [0003](0003-pluggable-substrates.md) | Experimental | Pluggable collaboration, connectivity, and deployment substrates |
+| [0004](0004-evidence-protocol.md) | Experimental | Eve evidence protocol |
