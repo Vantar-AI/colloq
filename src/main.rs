@@ -12,13 +12,14 @@ use eve::runtime::{
     run_memory_plan_demo_with_encoding, run_quic_demo, run_quic_plan_demo_with_encoding,
     run_tcp_demo, run_tcp_plan_demo_with_encoding,
 };
-use eve::{Conversation, Frame, project, validate, verify_trace};
+use eve::{Conversation, Frame, jev, project, validate, verify_trace};
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 use std::fs;
 use std::net::{SocketAddr, TcpListener};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
+use std::time::Duration;
 
 #[derive(Debug, Parser)]
 #[command(
@@ -77,6 +78,25 @@ enum Command {
         conversation: PathBuf,
         #[arg(long, default_value = "build/generate.eveplan.json")]
         out: PathBuf,
+    },
+    /// Validate a Jev binding against its conversation without calling Jev.
+    JevCheck {
+        #[arg(default_value = "examples/route.eveconv.json")]
+        conversation: PathBuf,
+        #[arg(default_value = "examples/route.evejev.json")]
+        binding: PathBuf,
+    },
+    /// Ask Jev for one decision at a bound choice state (needs TYPESAFE_API_KEY).
+    JevDecide {
+        #[arg(default_value = "examples/route.eveconv.json")]
+        conversation: PathBuf,
+        #[arg(default_value = "examples/route.evejev.json")]
+        binding: PathBuf,
+        /// JSON state for Jev to judge, for example '{"text": "Where is my refund?"}'.
+        #[arg(long)]
+        state_json: String,
+        #[arg(long, default_value_t = 10)]
+        timeout_seconds: u64,
     },
     /// Create an Automerge-backed collaborative draft from a validated Eve conversation.
     DraftCreate {
@@ -510,6 +530,48 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     std::process::exit(1);
                 }
                 Err(errors) => return Err(Box::new(errors)),
+            }
+        }
+        Command::JevCheck {
+            conversation,
+            binding,
+        } => {
+            let conversation: Conversation = read_json(&conversation)?;
+            let bound = jev::bind(&conversation, read_json(&binding)?)?;
+            let binding = bound.binding();
+            println!(
+                "valid Jev binding for {}.{} (chooser {}, {} branches, threshold {}, escalate {})",
+                binding.conversation,
+                binding.state,
+                bound.chooser(),
+                bound.branches().len(),
+                binding.threshold,
+                binding.escalate
+            );
+        }
+        Command::JevDecide {
+            conversation,
+            binding,
+            state_json,
+            timeout_seconds,
+        } => {
+            let conversation: Conversation = read_json(&conversation)?;
+            let bound = jev::bind(&conversation, read_json(&binding)?)?;
+            let state: serde_json::Value = serde_json::from_str(&state_json)?;
+            let decision = jev::TypeSafeClient::from_env(Duration::from_secs(timeout_seconds))
+                .and_then(|client| bound.decide(&client, &state));
+            match decision {
+                Ok(decision) => println!("{}", serde_json::to_string_pretty(&decision)?),
+                Err(error) => {
+                    println!(
+                        "{}",
+                        serde_json::to_string_pretty(&serde_json::json!({
+                            "failure": error.failure_id(),
+                            "message": error.to_string(),
+                        }))?
+                    );
+                    std::process::exit(1);
+                }
             }
         }
         Command::Project { conversation, out } => {

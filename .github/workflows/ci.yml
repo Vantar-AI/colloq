@@ -74,7 +74,10 @@ jobs:
         run: |
           check-jsonschema --schemafile spec/eve-graph-v0.schema.json examples/hello.evegraph.json
           check-jsonschema --schemafile spec/eve-conversation-v0.schema.json \
-            examples/generate.eveconv.json examples/draft-sync.eveconv.json
+            examples/generate.eveconv.json examples/draft-sync.eveconv.json \
+            examples/route.eveconv.json
+          check-jsonschema --schemafile spec/eve-jev-v0.schema.json \
+            examples/route.evejev.json
           check-jsonschema --schemafile spec/eve-session-v0.schema.json \
             examples/session-preface.compact.json
           check-jsonschema --schemafile spec/eve-evidence-v0.schema.json \

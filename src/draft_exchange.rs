@@ -201,7 +201,9 @@ fn decode_hex(encoded: &str) -> Result<Vec<u8>, DraftExchangeError> {
     }
     encoded
         .as_bytes()
-        .chunks_exact(2)
+        .as_chunks::<2>()
+        .0
+        .iter()
         .map(|chunk| {
             let text = std::str::from_utf8(chunk).map_err(|_| {
                 DraftExchangeError::Payload("sync bytes are not hexadecimal".to_string())

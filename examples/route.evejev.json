@@ -1,0 +1,15 @@
+{
+  "$schema": "../spec/eve-jev-v0.schema.json",
+  "eve_jev": "0.1.0",
+  "conversation": "example.route",
+  "state": "route",
+  "model": "jev-latest",
+  "instructions": "How should the router handle this incoming request?",
+  "criteria": {
+    "cached": "A common question with a fixed answer, such as opening hours, pricing, or a password reset link",
+    "infer": "A new question that needs a model to write a specific answer",
+    "review": "A request a person must handle: a complaint, a refund, a legal or safety issue"
+  },
+  "threshold": 0.95,
+  "escalate": "review"
+}

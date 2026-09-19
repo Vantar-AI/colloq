@@ -8,6 +8,7 @@ pub mod benchmark;
 pub mod deploy;
 pub mod draft_exchange;
 pub mod graph;
+pub mod jev;
 pub mod node;
 pub mod plan;
 pub mod runtime;

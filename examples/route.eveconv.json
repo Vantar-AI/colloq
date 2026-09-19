@@ -1,0 +1,205 @@
+{
+  "$schema": "../spec/eve-conversation-v0.schema.json",
+  "eve_conversation": "0.1.0",
+  "module": {
+    "id": "example.route",
+    "semantic_version": "0.1.0"
+  },
+  "roles": [
+    {
+      "id": "gateway",
+      "placement": [
+        "cpu"
+      ],
+      "capabilities": []
+    },
+    {
+      "id": "router",
+      "placement": [
+        "cpu"
+      ],
+      "capabilities": [
+        "jev.choose"
+      ]
+    }
+  ],
+  "types": [
+    {
+      "id": "request",
+      "kind": "record",
+      "fields": [
+        {
+          "id": "text",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "id": "cached_answer",
+      "kind": "record",
+      "fields": [
+        {
+          "id": "text",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "id": "model_answer",
+      "kind": "record",
+      "fields": [
+        {
+          "id": "text",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "id": "review_ticket",
+      "kind": "record",
+      "fields": [
+        {
+          "id": "reason",
+          "type": "string"
+        }
+      ]
+    }
+  ],
+  "failures": [
+    {
+      "id": "transport.closed",
+      "description": "The selected transport closed before the conversation completed.",
+      "retryable": false
+    },
+    {
+      "id": "transport.timeout",
+      "description": "A local transport deadline elapsed without evidence of remote progress.",
+      "retryable": true
+    },
+    {
+      "id": "transport.reset",
+      "description": "The peer or network explicitly reset the transport.",
+      "retryable": false
+    },
+    {
+      "id": "transport.unreachable",
+      "description": "The remote endpoint could not be reached.",
+      "retryable": true
+    },
+    {
+      "id": "transport.uncertain",
+      "description": "The endpoint cannot determine how far its peer progressed.",
+      "retryable": false
+    }
+  ],
+  "initial": "start",
+  "states": [
+    {
+      "kind": "send",
+      "id": "start",
+      "from": "gateway",
+      "to": "router",
+      "message": "request",
+      "deadline": "20ms",
+      "next": "route",
+      "on_failure": {
+        "transport.closed": "transport-failed",
+        "transport.reset": "transport-reset",
+        "transport.timeout": "transport-timeout",
+        "transport.unreachable": "transport-unreachable",
+        "transport.uncertain": "transport-uncertain"
+      }
+    },
+    {
+      "kind": "choice",
+      "id": "route",
+      "chooser": "router",
+      "branches": {
+        "cached": "reply-cached",
+        "infer": "reply-infer",
+        "review": "reply-review"
+      },
+      "on_failure": {
+        "transport.closed": "transport-failed",
+        "transport.reset": "transport-reset",
+        "transport.timeout": "transport-timeout",
+        "transport.unreachable": "transport-unreachable",
+        "transport.uncertain": "transport-uncertain"
+      }
+    },
+    {
+      "kind": "send",
+      "id": "reply-cached",
+      "from": "router",
+      "to": "gateway",
+      "message": "cached_answer",
+      "next": "end",
+      "on_failure": {
+        "transport.closed": "transport-failed",
+        "transport.reset": "transport-reset",
+        "transport.timeout": "transport-timeout",
+        "transport.unreachable": "transport-unreachable",
+        "transport.uncertain": "transport-uncertain"
+      }
+    },
+    {
+      "kind": "send",
+      "id": "reply-infer",
+      "from": "router",
+      "to": "gateway",
+      "message": "model_answer",
+      "next": "end",
+      "on_failure": {
+        "transport.closed": "transport-failed",
+        "transport.reset": "transport-reset",
+        "transport.timeout": "transport-timeout",
+        "transport.unreachable": "transport-unreachable",
+        "transport.uncertain": "transport-uncertain"
+      }
+    },
+    {
+      "kind": "send",
+      "id": "reply-review",
+      "from": "router",
+      "to": "gateway",
+      "message": "review_ticket",
+      "next": "end",
+      "on_failure": {
+        "transport.closed": "transport-failed",
+        "transport.reset": "transport-reset",
+        "transport.timeout": "transport-timeout",
+        "transport.unreachable": "transport-unreachable",
+        "transport.uncertain": "transport-uncertain"
+      }
+    },
+    {
+      "kind": "end",
+      "id": "end"
+    },
+    {
+      "kind": "fail",
+      "id": "transport-failed",
+      "failure": "transport.closed"
+    },
+    {
+      "kind": "fail",
+      "id": "transport-timeout",
+      "failure": "transport.timeout"
+    },
+    {
+      "kind": "fail",
+      "id": "transport-reset",
+      "failure": "transport.reset"
+    },
+    {
+      "kind": "fail",
+      "id": "transport-unreachable",
+      "failure": "transport.unreachable"
+    },
+    {
+      "kind": "fail",
+      "id": "transport-uncertain",
+      "failure": "transport.uncertain"
+    }
+  ]
+}

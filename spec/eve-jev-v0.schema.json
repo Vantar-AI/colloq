@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vantar.xyz/eve/spec/eve-jev-v0.schema.json",
+  "title": "Eve Jev Binding v0",
+  "description": "Binds one Eve choice state to one TypeSafe Jev Choice question. The Rust binder additionally checks that the state is a choice, that criteria map to its branches, and that the escalation branch exists.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["eve_jev", "conversation", "state", "model", "instructions", "criteria", "threshold", "escalate"],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "eve_jev": {
+      "const": "0.1.0"
+    },
+    "conversation": {
+      "description": "Module ID of the bound conversation.",
+      "type": "string",
+      "minLength": 1
+    },
+    "state": {
+      "description": "ID of the bound choice state.",
+      "type": "string",
+      "minLength": 1
+    },
+    "model": {
+      "description": "TypeSafe model, for example jev-latest.",
+      "type": "string",
+      "minLength": 1
+    },
+    "instructions": {
+      "description": "What Jev decides. A string or structured instructions.",
+      "type": ["string", "object", "array"]
+    },
+    "criteria": {
+      "description": "Branch label to rubric description; null needs no extra detail.",
+      "type": "object",
+      "minProperties": 2,
+      "additionalProperties": {
+        "type": ["string", "null"]
+      }
+    },
+    "threshold": {
+      "description": "Minimum confidence to take Jev's label. Required; there is no default.",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "escalate": {
+      "description": "Branch taken when confidence is below the threshold.",
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}
