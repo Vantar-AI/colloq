@@ -12,6 +12,7 @@ This directory contains machine-readable experiments for the canonical Eve Graph
 - [`eve-endpoint-v0.schema.json`](eve-endpoint-v0.schema.json) — public direct-address ticket for a persistent endpoint identity.
 - [`eve-authorization-v0.schema.json`](eve-authorization-v0.schema.json) — local allow-list binding authenticated endpoint IDs to exact roles and plan identities.
 - [`eve-evidence-v0.schema.json`](eve-evidence-v0.schema.json) — reproducible correctness, security, or performance result tied to one exact revision and protocol configuration.
+- [`eve-jev-v0.schema.json`](eve-jev-v0.schema.json) — binds one choice state to one TypeSafe Jev Choice question, with an explicit threshold and escalation branch. See [the Jev chooser](../docs/jev.md).
 
 Published schemas are available at `https://vantar.xyz/eve/spec/<schema-file>`.
 

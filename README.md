@@ -6,7 +6,7 @@
 
 **The graph is the program.** Compile computation, communication, placement, and evolution into one executable plan.
 
-[RFC-0002: Conversation](rfcs/0002-conversation-is-the-computation.md) · [RFC-0001: Kernel](rfcs/0001-eve-language-kernel.md) · [Evidence protocol](rfcs/0004-evidence-protocol.md) · [Substrates](docs/substrates.md) · [Two-node](docs/two-node.md) · [Plan](docs/plan.md) · [Wire](docs/wire.md) · [Runtime](docs/runtime.md) · [Benchmark](docs/benchmark.md) · [Vision](docs/vision.md) · [Architecture](docs/architecture.md) · [Roadmap](docs/roadmap.md)
+[RFC-0002: Conversation](rfcs/0002-conversation-is-the-computation.md) · [RFC-0001: Kernel](rfcs/0001-eve-language-kernel.md) · [Evidence protocol](rfcs/0004-evidence-protocol.md) · [Substrates](docs/substrates.md) · [Two-node](docs/two-node.md) · [Jev chooser](docs/jev.md) · [Plan](docs/plan.md) · [Wire](docs/wire.md) · [Runtime](docs/runtime.md) · [Benchmark](docs/benchmark.md) · [Vision](docs/vision.md) · [Architecture](docs/architecture.md) · [Roadmap](docs/roadmap.md)
 
 </div>
 
@@ -175,6 +175,11 @@ Eve uses three existing systems behind explicit boundaries:
 - **Miren** builds and places the current server testbed. Generated manifests bind the expected
   conversation and plan identities, which the server verifies at startup.
 
+A fourth, optional adapter lets TypeSafe's **Jev** model select the branch at a `choice` state.
+The binding is validated against the conversation before any call, the confidence threshold is
+explicit, and a low-confidence answer takes a declared escalation branch. See
+[the Jev chooser](docs/jev.md).
+
 They are experimental adapters, not mandatory language dependencies. See [the complete substrate
 boundary](docs/substrates.md), the [two-node runbook](docs/two-node.md), and
 [RFC-0003](rfcs/0003-pluggable-substrates.md).
@@ -222,6 +227,7 @@ docs/
   design.md          Principles, semantic model, and non-goals
   architecture.md    Proposed compiler and runtime layers
   substrates.md      Automerge, Iroh, and Miren integration boundaries
+  jev.md             Jev as a validated chooser for choice states
   plan.md            Reusable Eve Plan v0 artifact and session boundary
   wire.md            Reference and compact Eve Wire encodings
   runtime.md         Executable memory/TCP reference experiment
@@ -239,10 +245,12 @@ spec/
   eve-conversation-...json  Executable global conversation schema
   eve-plan-...json   Compiled execution-plan schema
   eve-session-...json  Plan-bound network-preface schema
+  eve-jev-...json    Jev choice-binding schema
 examples/
   hello.eve          Minimal server-to-server flow
   hello.evegraph.json  The same idea as a typed incomplete graph
   generate.eveconv.json  Executable request/stream/cancel conversation
+  route.eveconv.json     Router choice with a Jev binding (route.evejev.json)
   session-preface.compact.json  Compact network-session binding fixture
   traces/            Valid and deliberately invalid Eve Wire traces
   evolution.eve      Bounded evolutionary loop
@@ -250,6 +258,7 @@ src/
   benchmark.rs       Eve versus hand-written reference benchmark
   deploy.rs          Miren manifest and container adapter
   graph.rs           Automerge draft store and promotion gate
+  jev.rs             Jev binding validation and TypeSafe Choice client
   lib.rs             Checker, endpoint projection, trace validation
   plan.rs            Plan compiler, identity, and artifact verification
   runtime.rs         Endpoint executor and memory/TCP/QUIC/Iroh wire plans
