@@ -73,6 +73,19 @@ Colloq should advance by falsifiable prototypes, not by designing a large langua
 3. Distributed evaluation of a population of model variants.
 4. Model pipeline spanning a conventional GPU and a Nuro-supported substrate.
 
+## Known gap: adoption inside existing systems
+
+Every phase above assumes a system built with Colloq from the start. Nothing in the plan
+lets a team adopt one conversation inside a running gRPC or REST system, and no phase
+produces a bridge, an adapter or a migration path.
+
+This is a deliberate omission for the research phases and a serious problem for anything
+after them, because a language that only works on a blank page is admired and not adopted.
+It is recorded in [the goal](regeneration.md) so it stays visible, and it needs its own
+RFC before Phase 3 is finished. A bridge must not dilute the core: an adapter that accepts
+an unchecked peer, or that lets one side skip the plan identity, is not a bridge worth
+having.
+
 ## Decisions intentionally deferred
 
 - Native code generation versus an MLIR-only backend.
