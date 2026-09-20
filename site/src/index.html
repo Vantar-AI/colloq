@@ -3,17 +3,17 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Colloq — the conversation is the computation</title>
+    <title>Colloq — one typed conversation for servers that work together</title>
     <meta
       name="description"
-      content="Colloq is an open-source, server-native language. One typed conversation compiles into a checked endpoint for every server, and runs over memory, TCP, QUIC or Iroh."
+      content="Colloq is an open-source language for systems where several servers must agree on a protocol. Write the conversation once; the compiler gives each server a checked endpoint that runs over memory, TCP, QUIC or Iroh."
     />
     <link rel="canonical" href="https://colloq.dev/" />
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="Colloq — the conversation is the computation" />
+    <meta property="og:title" content="Colloq — one typed conversation for servers that work together" />
     <meta
       property="og:description"
-      content="One typed conversation compiles into a checked endpoint for every server. An open-source research language from Vantar."
+      content="Write the protocol once as a typed conversation. The compiler gives every server a checked endpoint, and the runtime keeps the meaning across the network."
     />
     <meta property="og:url" content="https://colloq.dev/" />
     <meta name="twitter:card" content="summary_large_image" />
@@ -23,45 +23,48 @@
   <body>
     <a class="skip" href="#main">Skip to content</a>
 
-    <header class="nav">
-      <a class="brand" href="/">
-        <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
-          <circle cx="9" cy="10" r="4.4" />
-          <circle cx="23" cy="10" r="4.4" />
-          <circle cx="16" cy="23" r="4.4" />
-          <path d="M9 10h14M9.9 13.7 15.1 20M22.1 13.7 16.9 20" />
-        </svg>
-        <span>Colloq</span>
-      </a>
-      <nav class="nav-links" aria-label="Primary">
-        <a href="/docs/">Docs</a>
-        <a href="/spec/">Spec</a>
-        <a href="/rfcs/">RFCs</a>
-        <a href="/docs/benchmark/">Benchmark</a>
-      </nav>
-      <a class="btn btn-ink nav-cta" href="https://github.com/Vantar-AI/colloq">GitHub</a>
-    </header>
+    <div class="hero">
+      <header class="topbar topbar-marketing">
+        <a class="brand" href="/">
+          <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+            <circle cx="9" cy="10" r="4.4" />
+            <circle cx="23" cy="10" r="4.4" />
+            <circle cx="16" cy="23" r="4.4" />
+            <path d="M9 10h14M9.9 13.7 15.1 20M22.1 13.7 16.9 20" />
+          </svg>
+          <span>Colloq</span>
+        </a>
+        <nav class="topnav" aria-label="Primary">
+          <a href="/docs/">Docs</a>
+          <a href="/spec/">Spec</a>
+          <a href="/rfcs/">RFCs</a>
+          <a href="/docs/benchmark/">Benchmark</a>
+        </nav>
+        <a class="button small outlined" href="https://github.com/Vantar-AI/colloq">GitHub</a>
+      </header>
 
-    <main id="main">
-      <section class="hero">
-        <p class="eyebrow"><span class="dot"></span> v0.1 · research prototype · Apache 2.0</p>
-        <h1>The conversation<br />is the computation.</h1>
-        <p class="lede">
-          Colloq starts with one typed conversation instead of a client program, a server
-          program and a protocol file that drift apart. The compiler projects that
-          conversation into one checked endpoint per role.
-        </p>
-        <div class="hero-actions">
-          <a class="btn btn-accent" href="/docs/quickstart/">Start here</a>
-          <a class="btn btn-ghost" href="/rfcs/0002-conversation/">Read the RFC</a>
-        </div>
+      <main id="main">
+        <section class="hero-inner">
+          <span class="tag tag_size_extra-large">v0.1 · research prototype · Apache 2.0</span>
+          <h1>One conversation.<br />Every server keeps its half.</h1>
+          <p class="hero-sub">
+            Colloq is a language for systems where several servers must agree on a
+            protocol: an inference gateway and its routers, an agent and its tools, two
+            services that keep drifting apart. You write the exchange once. The compiler
+            gives each side a checked endpoint, and the runtime carries it over shared
+            memory, TCP, QUIC or Iroh.
+          </p>
+          <div class="hero-actions">
+            <a class="button emphasized medium" href="/docs/quickstart/">Start here</a>
+            <a class="button outlined medium" href="/rfcs/0002-conversation/">Read the RFC</a>
+          </div>
 
-        <figure class="terminal terminal-hero">
-          <figcaption class="terminal-bar">
-            <span class="lamp"></span><span class="lamp"></span><span class="lamp"></span>
-            <span class="terminal-name">~/colloq</span>
-          </figcaption>
-          <pre><code><span class="c-prompt">$</span> colloq check examples/route.colloqconv.json
+          <figure class="terminal terminal-hero">
+            <figcaption class="terminal-bar">
+              <span class="lamp"></span><span class="lamp"></span><span class="lamp"></span>
+              <span class="terminal-name">~/colloq</span>
+            </figcaption>
+            <pre><code><span class="c-prompt">$</span> colloq check examples/route.colloqconv.json
 <span class="c-ok">valid conversation</span> example.route (2 roles, 11 states)
 
 <span class="c-prompt">$</span> colloq compile examples/route.colloqconv.json
@@ -71,23 +74,72 @@ plan         <span class="c-id">sha256:016d5975…</span>
 
 <span class="c-prompt">$</span> colloq run-plan build/route.colloqplan.json --transport quic --wire compact
 <span class="c-ok">✓</span> client and server report the same semantic trace</code></pre>
-        </figure>
-      </section>
+          </figure>
+        </section>
+      </main>
+    </div>
 
-      <section class="band">
-        <div class="wrap">
-          <p class="kicker">One source of truth</p>
-          <h2>Write the agreement once.<br />Every server gets its half.</h2>
-          <p class="section-lede">
-            A conversation names the roles, the messages between them, the choices, the
-            loops, the cancellation and the failures. The compiler derives a local state
-            machine for each role, so two servers cannot disagree about the protocol.
-          </p>
+    <section class="section">
+      <div class="wrap">
+        <p class="kicker">What it is for</p>
+        <h2>Three servers, one agreement.</h2>
+        <p class="section-lede">
+          Every system below has the same problem: two or more processes must follow the
+          same protocol, including its failures, and today that agreement lives in a
+          client library, a server handler and a schema file that drift apart.
+        </p>
+        <div class="card-row">
+          <article class="card contained">
+            <span class="tag tag_size_large">Inference routing</span>
+            <h3>Gateway, router, experts</h3>
+            <p>
+              A request arrives, a router decides between a cached answer and a model,
+              tokens stream back, and the client may cancel mid-stream. Deadlines and
+              cancellation are part of the type, so no side invents its own handling.
+            </p>
+            <p class="card-foot">choice · stream · cancel · deadline</p>
+          </article>
+          <article class="card contained">
+            <span class="tag tag_size_large">Agents and tools</span>
+            <h3>Turn order that holds</h3>
+            <p>
+              An agent process and its tool services must agree on who speaks next, what
+              a retry means and when a run is finished. Colloq makes that order checkable
+              before anything is deployed.
+            </p>
+            <p class="card-foot">roles · loops · terminal states</p>
+          </article>
+          <article class="card contained">
+            <span class="tag tag_size_large">Service pairs</span>
+            <h3>Two services that drift</h3>
+            <p>
+              The classic pair: a handwritten client, a handler and a schema file that
+              disagree after the third change. One conversation replaces all three, and
+              the identity changes when the meaning changes.
+            </p>
+            <p class="card-foot">projection · content identity</p>
+          </article>
+        </div>
+        <p class="section-lede" style="margin-top: 2rem; margin-bottom: 0">
+          Colloq is not a web framework and not a hosted service. If one process does all
+          the work, you do not need it.
+        </p>
+      </div>
+    </section>
 
-          <div class="split">
-            <figure class="code-card">
-              <figcaption>route.colloq</figcaption>
-              <pre><code><span class="k">conversation</span> <span class="t">Route</span>(request: <span class="t">Request</span>) {
+    <section class="section section-subdued">
+      <div class="wrap">
+        <p class="kicker">How it works</p>
+        <h2>Write the agreement once.<br />The compiler splits it.</h2>
+        <p class="section-lede">
+          A conversation names the roles, the messages between them, the choices, the
+          loops, the cancellation and the failures. The compiler derives one local state
+          machine per role, so two servers cannot disagree about the protocol.
+        </p>
+        <div class="split">
+          <figure class="code-card">
+            <figcaption>route.colloq</figcaption>
+            <pre><code><span class="k">conversation</span> <span class="t">Route</span>(request: <span class="t">Request</span>) {
     <span class="k">roles</span> gateway, router
 
     gateway -&gt; router: request <span class="k">within</span> 20ms
@@ -98,119 +150,122 @@ plan         <span class="c-id">sha256:016d5975…</span>
         review { router -&gt; gateway: <span class="t">ReviewTicket</span>; <span class="k">end</span> }
     }
 }</code></pre>
-            </figure>
-            <ul class="facts">
-              <li>
-                <h3>Typed choices, not guesses</h3>
-                <p>
-                  A branch label is part of the type. A role can only send a transition the
-                  plan declares, and the receiver checks it before it advances.
-                </p>
-              </li>
-              <li>
-                <h3>Failure is in the language</h3>
-                <p>
-                  A timeout or a reset is a declared transition to a declared state, not a
-                  generic exception that each service handles differently.
-                </p>
-              </li>
-              <li>
-                <h3>One identity across the cluster</h3>
-                <p>
-                  The conversation and the compiled plan are content addressed. Both peers
-                  exchange those identities before frame zero, and a mismatch stops there.
-                </p>
-              </li>
-            </ul>
-          </div>
+          </figure>
+          <ul class="facts">
+            <li>
+              <h3>Typed choices, not guesses</h3>
+              <p>
+                A branch label is part of the type. A role can only send a transition the
+                plan declares, and the receiver checks it before it advances.
+              </p>
+            </li>
+            <li>
+              <h3>Failure is in the language</h3>
+              <p>
+                A timeout or a reset is a declared transition to a declared state, not a
+                generic exception that each service handles differently.
+              </p>
+            </li>
+            <li>
+              <h3>One identity across the cluster</h3>
+              <p>
+                The conversation and the compiled plan are content addressed. Both peers
+                exchange those identities before frame zero, and a mismatch stops there.
+              </p>
+            </li>
+          </ul>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <section class="band band-tint">
-        <div class="wrap">
-          <p class="kicker">Transports</p>
-          <h2>The meaning survives the wire.</h2>
-          <p class="section-lede">
-            The same plan runs over shared memory, TCP, authenticated QUIC and Iroh. Every
-            transport reconstructs the same semantic trace, so a local run and a two-host
-            run mean the same thing.
-          </p>
-          <div class="chips">
-            <span class="chip">memory</span>
-            <span class="chip">TCP</span>
-            <span class="chip">QUIC (mTLS)</span>
-            <span class="chip">Iroh (peer identity)</span>
-            <span class="chip">reference wire</span>
-            <span class="chip">compact wire</span>
-          </div>
+    <section class="section">
+      <div class="wrap">
+        <p class="kicker">Transports</p>
+        <h2>The meaning survives the wire.</h2>
+        <p class="section-lede">
+          The same compiled plan runs over shared memory, TCP, authenticated QUIC and
+          Iroh. Every transport reconstructs the same semantic trace, so a laptop run and
+          a two-host run mean the same thing.
+        </p>
+        <div class="tag-row">
+          <span class="tag tag_size_large">memory</span>
+          <span class="tag tag_size_large">TCP</span>
+          <span class="tag tag_size_large">QUIC (mTLS)</span>
+          <span class="tag tag_size_large">Iroh (peer identity)</span>
+          <span class="tag tag_size_large">reference wire</span>
+          <span class="tag tag_size_large">compact wire</span>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <section class="band band-thin">
-        <div class="wrap">
-          <p class="kicker">Extensions</p>
-          <h2>The core needs no model.</h2>
-          <p class="section-lede">
-            Colloq is a language and a runtime. Nothing in it depends on a model. An
-            optional binding lets a typed model pick the label at a choice state, with an
-            explicit confidence threshold and a declared escalation branch. Remove it and
-            the conversation still compiles, still runs and still checks.
-            <a href="/docs/jev/">Read how the optional chooser works</a>.
-          </p>
+    <section class="section section-subdued section-tight">
+      <div class="wrap">
+        <p class="kicker">Extensions</p>
+        <h2>The core needs no model.</h2>
+        <p class="section-lede" style="margin-bottom: 0">
+          Colloq is a language and a runtime. Nothing in it depends on a model. One
+          optional binding lets a typed model choose the label at a choice state, with an
+          explicit confidence threshold and a declared escalation branch. Remove it and
+          the conversation still compiles, still runs and still checks.
+          <a href="/docs/jev/">See the optional chooser</a>.
+        </p>
+      </div>
+    </section>
+
+    <section class="section section-dark">
+      <div class="wrap">
+        <p class="kicker">Evidence</p>
+        <h2>Every number here is reproducible.</h2>
+        <p class="section-lede">
+          Colloq publishes a fixed workload, a hand-written baseline and the full report,
+          so a claim can be checked instead of believed. These are the current medians on
+          an Apple M4 over 500 iterations.
+        </p>
+        <div class="kpi-row">
+          <div class="kpi"><strong>1.83 µs</strong><span>compact checked transition</span></div>
+          <div class="kpi"><strong>0.125 µs</strong><span>to start two sessions from a plan</span></div>
+          <div class="kpi"><strong>51.6 µs</strong><span>plan compilation, once per plan</span></div>
+          <div class="kpi"><strong>4</strong><span>transports, one semantic trace</span></div>
         </div>
-      </section>
+        <p class="note">
+          The whole exchange currently costs 1.51× a hand-written Rust pair, down from
+          1.68× with the compact wire, against a target of 1.25×. The compact encoding is
+          still JSON, so a binary codec is the next measurement. The benchmark exists to
+          make that number move in public.
+        </p>
+        <p style="margin-top: 1.75rem">
+          <a class="button default medium" href="/docs/benchmark/">Read the benchmark</a>
+        </p>
+      </div>
+    </section>
 
-      <section class="band band-ink">
-        <div class="wrap">
-          <p class="kicker">Measured, not claimed</p>
-          <h2>Here is where Colloq loses.</h2>
-          <p class="section-lede">
-            A research language that only publishes its wins is marketing. These numbers come
-            from the checked-in benchmark on an Apple M4, 500 iterations, three tokens.
-          </p>
-          <div class="metrics">
-            <div><strong>1.51×</strong><span>slower than hand-written Rust, whole exchange</span></div>
-            <div><strong>1.83 µs</strong><span>compact checked transition, median</span></div>
-            <div><strong>51.6 µs</strong><span>plan compilation, once per plan</span></div>
-            <div><strong>0.125 µs</strong><span>to start two sessions from a compiled plan</span></div>
-          </div>
-          <p class="section-lede tight">
-            The compact wire is still JSON. The target of 1.25× is not met. There is no
-            hosted product, no scheduler and no SLA. What exists is a checker, a compiler, a
-            reference runtime over four transports, an Automerge draft gate and 76 tests.
-          </p>
-          <a class="btn btn-accent" href="/docs/benchmark/">Read the benchmark</a>
-        </div>
-      </section>
-
-      <section class="band band-cta">
-        <div class="wrap center">
-          <h2>Start with the two-node run.</h2>
-          <p class="section-lede">
-            Clone it, compile one conversation, then run the same plan across two processes
-            with mutual authentication.
-          </p>
-          <figure class="terminal terminal-small">
-            <figcaption class="terminal-bar">
-              <span class="lamp"></span><span class="lamp"></span><span class="lamp"></span>
-              <span class="terminal-name">quickstart</span>
-            </figcaption>
-            <pre><code><span class="c-prompt">$</span> git clone https://github.com/Vantar-AI/colloq
+    <section class="section center">
+      <div class="wrap">
+        <h2>Start with the two-node run.</h2>
+        <p class="section-lede">
+          Clone it, compile one conversation, then run the same plan across two processes
+          with mutual authentication.
+        </p>
+        <figure class="terminal" style="width: min(46rem, 100%)">
+          <figcaption class="terminal-bar">
+            <span class="lamp"></span><span class="lamp"></span><span class="lamp"></span>
+            <span class="terminal-name">quickstart</span>
+          </figcaption>
+          <pre><code><span class="c-prompt">$</span> git clone https://github.com/Vantar-AI/colloq
 <span class="c-prompt">$</span> cargo run -- check examples/generate.colloqconv.json
 <span class="c-prompt">$</span> cargo run -- bootstrap-two-node --out build/two-node</code></pre>
-          </figure>
-          <div class="hero-actions center-actions">
-            <a class="btn btn-accent" href="https://github.com/Vantar-AI/colloq">Open on GitHub</a>
-            <a class="btn btn-ghost" href="/docs/two-node/">Two-node runbook</a>
-          </div>
+        </figure>
+        <div class="hero-actions" style="margin-bottom: 0">
+          <a class="button emphasized medium" href="/docs/quickstart/">Read the quickstart</a>
+          <a class="button outlined medium" href="https://github.com/Vantar-AI/colloq">Open on GitHub</a>
         </div>
-      </section>
-    </main>
+      </div>
+    </section>
 
     <footer class="footer">
       <div class="wrap footer-grid">
         <div>
-          <a class="brand brand-footer" href="/">
+          <a class="brand" href="/">
             <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
               <circle cx="9" cy="10" r="4.4" />
               <circle cx="23" cy="10" r="4.4" />

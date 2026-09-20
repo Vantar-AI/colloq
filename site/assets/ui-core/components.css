@@ -1,0 +1,13 @@
+/* Subset of unisonweb/ui-core components used by colloq.dev. */
+@import "./components/text.css";
+@import "./components/button.css";
+@import "./components/tooltip.css";
+@import "./components/card.css";
+@import "./components/badges.css";
+@import "./components/divider.css";
+@import "./components/navigation.css";
+@import "./components/sidebar.css";
+@import "./components/status-banner.css";
+@import "./components/tag.css";
+@import "./components/kpi-tag.css";
+@import "./components/tab-list.css";
