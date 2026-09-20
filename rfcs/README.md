@@ -37,3 +37,4 @@ The implementation may evolve quickly. Accepted semantics require a conformance 
 | [0003](0003-pluggable-substrates.md) | Experimental | Pluggable collaboration, connectivity, and deployment substrates |
 | [0004](0004-evidence-protocol.md) | Experimental | Colloq evidence protocol |
 | [0006](0006-identity-lifecycle.md) | Draft | Identity rotation and revocation |
+| [0007](0007-graph-transactions.md) | Draft | Typed composite graph transactions |
