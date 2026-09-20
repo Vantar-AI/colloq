@@ -74,3 +74,9 @@ says it must, and not firing where it must not.
   meaningful, or is a fresh session per conversation acceptable at that RTT?
 - Which of the three configurations, if any, produces a number worth publishing on the
   website, and which stays in the repository as evidence only?
+
+## Which claim this advances
+
+**Regeneration evaluated against stability** moves: every current number comes from one machine, and a claim about distributed software needs results from real hosts under real faults. See [the goal](../docs/regeneration.md) for the full scoreboard. The core does not
+change: this work exists to make the conversation and its identity stronger, not to add a
+second direction.
