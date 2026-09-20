@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://vantar.xyz/colloq/spec/colloq-conversation-v0.schema.json",
+  "$id": "https://colloq.dev/spec/colloq-conversation-v0.schema.json",
   "title": "Colloq Conversation v0 experimental interchange",
   "description": "A global two-role conversation that can be projected into local endpoint machines.",
   "type": "object",

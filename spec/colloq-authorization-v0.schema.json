@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://vantar.xyz/colloq/spec/colloq-authorization-v0.schema.json",
+  "$id": "https://colloq.dev/spec/colloq-authorization-v0.schema.json",
   "title": "Colloq Endpoint Authorization Policy v0",
   "description": "A local allow-list binding authenticated endpoint identities to exact Colloq roles and plan identities.",
   "type": "object",

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://vantar.xyz/colloq/spec/colloq-endpoint-v0.schema.json",
+  "$id": "https://colloq.dev/spec/colloq-endpoint-v0.schema.json",
   "title": "Colloq Public Endpoint Ticket v0",
   "description": "Public direct-address information for an authenticated Colloq/Iroh node.",
   "type": "object",

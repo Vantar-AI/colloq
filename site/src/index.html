@@ -34,10 +34,10 @@
         <span>Colloq</span>
       </a>
       <nav class="nav-links" aria-label="Primary">
-        <a href="https://github.com/Vantar-AI/colloq/blob/main/rfcs/0002-conversation-is-the-computation.md">RFC</a>
-        <a href="https://github.com/Vantar-AI/colloq/tree/main/docs">Docs</a>
-        <a href="https://vantar.xyz/colloq/spec/">Spec</a>
-        <a href="https://github.com/Vantar-AI/colloq/blob/main/docs/jev.md">Jev</a>
+        <a href="/docs/">Docs</a>
+        <a href="/spec/">Spec</a>
+        <a href="/rfcs/">RFCs</a>
+        <a href="/docs/benchmark/">Benchmark</a>
       </nav>
       <a class="btn btn-ink nav-cta" href="https://github.com/Vantar-AI/colloq">GitHub</a>
     </header>
@@ -52,8 +52,8 @@
           conversation into one checked endpoint per role.
         </p>
         <div class="hero-actions">
-          <a class="btn btn-accent" href="https://github.com/Vantar-AI/colloq">Read the source</a>
-          <a class="btn btn-ghost" href="https://github.com/Vantar-AI/colloq/blob/main/rfcs/0002-conversation-is-the-computation.md">Read the RFC</a>
+          <a class="btn btn-accent" href="/docs/quickstart/">Start here</a>
+          <a class="btn btn-ghost" href="/rfcs/0002-conversation/">Read the RFC</a>
         </div>
 
         <figure class="terminal terminal-hero">
@@ -146,32 +146,17 @@ plan         <span class="c-id">sha256:016d5975…</span>
         </div>
       </section>
 
-      <section class="band">
+      <section class="band band-thin">
         <div class="wrap">
-          <p class="kicker">Jev</p>
-          <h2>A model may pick the branch.<br />It may not break the protocol.</h2>
+          <p class="kicker">Extensions</p>
+          <h2>The core needs no model.</h2>
           <p class="section-lede">
-            Bind a choice state to a TypeSafe Jev question and the model selects a declared
-            label with a calibrated confidence. Below your threshold, Colloq takes the
-            escalation branch you declared. A service error is a typed failure, never a
-            silent guess.
+            Colloq is a language and a runtime. Nothing in it depends on a model. An
+            optional binding lets a typed model pick the label at a choice state, with an
+            explicit confidence threshold and a declared escalation branch. Remove it and
+            the conversation still compiles, still runs and still checks.
+            <a href="/docs/jev/">Read how the optional chooser works</a>.
           </p>
-          <div class="table-card">
-            <table>
-              <thead>
-                <tr><th>Request</th><th>Jev picks</th><th class="num">Confidence</th><th>Colloq sends</th></tr>
-              </thead>
-              <tbody>
-                <tr><td>“What are your opening hours?”</td><td><code>cached</code></td><td class="num">0.99</td><td><code>cached</code></td></tr>
-                <tr><td>“How does endpoint projection work?”</td><td><code>infer</code></td><td class="num">0.94</td><td><code class="warn">review</code> <span class="muted">escalated</span></td></tr>
-                <tr><td>“Charged twice, I want a refund.”</td><td><code>review</code></td><td class="num">1.00</td><td><code>review</code></td></tr>
-              </tbody>
-            </table>
-            <p class="table-note">
-              Live run, threshold 0.95. Three requests is a smoke test, not an accuracy
-              measurement.
-            </p>
-          </div>
         </div>
       </section>
 
@@ -194,7 +179,7 @@ plan         <span class="c-id">sha256:016d5975…</span>
             hosted product, no scheduler and no SLA. What exists is a checker, a compiler, a
             reference runtime over four transports, an Automerge draft gate and 76 tests.
           </p>
-          <a class="btn btn-accent" href="https://github.com/Vantar-AI/colloq/blob/main/docs/benchmark.md">Read the benchmark</a>
+          <a class="btn btn-accent" href="/docs/benchmark/">Read the benchmark</a>
         </div>
       </section>
 
@@ -216,7 +201,7 @@ plan         <span class="c-id">sha256:016d5975…</span>
           </figure>
           <div class="hero-actions center-actions">
             <a class="btn btn-accent" href="https://github.com/Vantar-AI/colloq">Open on GitHub</a>
-            <a class="btn btn-ghost" href="https://github.com/Vantar-AI/colloq/blob/main/docs/two-node.md">Two-node runbook</a>
+            <a class="btn btn-ghost" href="/docs/two-node/">Two-node runbook</a>
           </div>
         </div>
       </section>
@@ -235,27 +220,27 @@ plan         <span class="c-id">sha256:016d5975…</span>
             <span>Colloq</span>
           </a>
           <p class="footer-note">
-            An open-source language experiment from Vantar Group LLC. Apache 2.0.
+            An open-source language for servers that compute together. Apache 2.0.
           </p>
         </div>
         <div>
-          <p class="footer-head">Project</p>
-          <a href="https://github.com/Vantar-AI/colloq">GitHub</a>
-          <a href="https://github.com/Vantar-AI/colloq/tree/main/docs">Docs</a>
-          <a href="https://github.com/Vantar-AI/colloq/tree/main/rfcs">RFCs</a>
-          <a href="https://vantar.xyz/colloq/spec/">Schemas</a>
+          <p class="footer-head">Learn</p>
+          <a href="/docs/quickstart/">Quickstart</a>
+          <a href="/docs/">Documentation</a>
+          <a href="/rfcs/">RFCs</a>
+          <a href="/docs/benchmark/">Benchmark</a>
         </div>
         <div>
-          <p class="footer-head">Vantar</p>
-          <a href="https://vantar.xyz/colloq">Colloq at Vantar</a>
-          <a href="https://vantar.xyz/coldstack">Coldstack</a>
-          <a href="https://vantar.xyz/privacy">Privacy</a>
-          <a href="https://vantar.xyz/terms">Terms</a>
+          <p class="footer-head">Build</p>
+          <a href="https://github.com/Vantar-AI/colloq">Source</a>
+          <a href="https://github.com/Vantar-AI/colloq/blob/main/CONTRIBUTING.md">Contribute</a>
+          <a href="/spec/">Schemas</a>
+          <a href="https://github.com/Vantar-AI/colloq/issues">Issues</a>
         </div>
       </div>
       <div class="wrap footer-bottom">
-        <span>© 2026 Vantar Group LLC</span>
-        <span>hello@vantar.xyz</span>
+        <span>Colloq is open source under Apache 2.0.</span>
+        <span>Maintained by Vantar Group LLC · hello@vantar.xyz</span>
       </div>
     </footer>
   </body>
