@@ -527,6 +527,9 @@ a {
   margin: 0 auto;
   align-items: start;
 }
+.layout-full {
+  grid-template-columns: minmax(0, 1fr);
+}
 .app-doc .layout {
   min-height: calc(100vh - var(--app-header-height));
 }
