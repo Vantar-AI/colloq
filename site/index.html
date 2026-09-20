@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Colloq — the conversation is the computation</title>
+    <meta
+      name="description"
+      content="Colloq is an open-source, server-native language. One typed conversation compiles into a checked endpoint for every server, and runs over memory, TCP, QUIC or Iroh."
+    />
+    <link rel="canonical" href="https://colloq.dev/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Colloq — the conversation is the computation" />
+    <meta
+      property="og:description"
+      content="One typed conversation compiles into a checked endpoint for every server. An open-source research language from Vantar."
+    />
+    <meta property="og:url" content="https://colloq.dev/" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="/assets/mark.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/assets/styles.css" />
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+
+    <header class="nav">
+      <a class="brand" href="/">
+        <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+          <circle cx="9" cy="10" r="4.4" />
+          <circle cx="23" cy="10" r="4.4" />
+          <circle cx="16" cy="23" r="4.4" />
+          <path d="M9 10h14M9.9 13.7 15.1 20M22.1 13.7 16.9 20" />
+        </svg>
+        <span>Colloq</span>
+      </a>
+      <nav class="nav-links" aria-label="Primary">
+        <a href="https://github.com/Vantar-AI/colloq/blob/main/rfcs/0002-conversation-is-the-computation.md">RFC</a>
+        <a href="https://github.com/Vantar-AI/colloq/tree/main/docs">Docs</a>
+        <a href="https://vantar.xyz/colloq/spec/">Spec</a>
+        <a href="https://github.com/Vantar-AI/colloq/blob/main/docs/jev.md">Jev</a>
+      </nav>
+      <a class="btn btn-ink nav-cta" href="https://github.com/Vantar-AI/colloq">GitHub</a>
+    </header>
+
+    <main id="main">
+      <section class="hero">
+        <p class="eyebrow"><span class="dot"></span> v0.1 · research prototype · Apache 2.0</p>
+        <h1>The conversation<br />is the computation.</h1>
+        <p class="lede">
+          Colloq starts with one typed conversation instead of a client program, a server
+          program and a protocol file that drift apart. The compiler projects that
+          conversation into one checked endpoint per role.
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-accent" href="https://github.com/Vantar-AI/colloq">Read the source</a>
+          <a class="btn btn-ghost" href="https://github.com/Vantar-AI/colloq/blob/main/rfcs/0002-conversation-is-the-computation.md">Read the RFC</a>
+        </div>
+
+        <figure class="terminal terminal-hero">
+          <figcaption class="terminal-bar">
+            <span class="lamp"></span><span class="lamp"></span><span class="lamp"></span>
+            <span class="terminal-name">~/colloq</span>
+          </figcaption>
+          <pre><code><span class="c-prompt">$</span> colloq check examples/route.colloqconv.json
+<span class="c-ok">valid conversation</span> example.route (2 roles, 11 states)
+
+<span class="c-prompt">$</span> colloq compile examples/route.colloqconv.json
+wrote build/route.colloqplan.json
+conversation <span class="c-id">sha256:92c198d0…</span>
+plan         <span class="c-id">sha256:016d5975…</span>
+
+<span class="c-prompt">$</span> colloq run-plan build/route.colloqplan.json --transport quic --wire compact
+<span class="c-ok">✓</span> client and server report the same semantic trace</code></pre>
+        </figure>
+      </section>
+
+      <section class="band">
+        <div class="wrap">
+          <p class="kicker">One source of truth</p>
+          <h2>Write the agreement once.<br />Every server gets its half.</h2>
+          <p class="section-lede">
+            A conversation names the roles, the messages between them, the choices, the
+            loops, the cancellation and the failures. The compiler derives a local state
+            machine for each role, so two servers cannot disagree about the protocol.
+          </p>
+
+          <div class="split">
+            <figure class="code-card">
+              <figcaption>route.colloq</figcaption>
+              <pre><code><span class="k">conversation</span> <span class="t">Route</span>(request: <span class="t">Request</span>) {
+    <span class="k">roles</span> gateway, router
+
+    gateway -&gt; router: request <span class="k">within</span> 20ms
+
+    <span class="k">choice</span> router {
+        cached { router -&gt; gateway: <span class="t">CachedAnswer</span>; <span class="k">end</span> }
+        infer  { router -&gt; gateway: <span class="t">ModelAnswer</span>;  <span class="k">end</span> }
+        review { router -&gt; gateway: <span class="t">ReviewTicket</span>; <span class="k">end</span> }
+    }
+}</code></pre>
+            </figure>
+            <ul class="facts">
+              <li>
+                <h3>Typed choices, not guesses</h3>
+                <p>
+                  A branch label is part of the type. A role can only send a transition the
+                  plan declares, and the receiver checks it before it advances.
+                </p>
+              </li>
+              <li>
+                <h3>Failure is in the language</h3>
+                <p>
+                  A timeout or a reset is a declared transition to a declared state, not a
+                  generic exception that each service handles differently.
+                </p>
+              </li>
+              <li>
+                <h3>One identity across the cluster</h3>
+                <p>
+                  The conversation and the compiled plan are content addressed. Both peers
+                  exchange those identities before frame zero, and a mismatch stops there.
+                </p>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="band band-tint">
+        <div class="wrap">
+          <p class="kicker">Transports</p>
+          <h2>The meaning survives the wire.</h2>
+          <p class="section-lede">
+            The same plan runs over shared memory, TCP, authenticated QUIC and Iroh. Every
+            transport reconstructs the same semantic trace, so a local run and a two-host
+            run mean the same thing.
+          </p>
+          <div class="chips">
+            <span class="chip">memory</span>
+            <span class="chip">TCP</span>
+            <span class="chip">QUIC (mTLS)</span>
+            <span class="chip">Iroh (peer identity)</span>
+            <span class="chip">reference wire</span>
+            <span class="chip">compact wire</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="band">
+        <div class="wrap">
+          <p class="kicker">Jev</p>
+          <h2>A model may pick the branch.<br />It may not break the protocol.</h2>
+          <p class="section-lede">
+            Bind a choice state to a TypeSafe Jev question and the model selects a declared
+            label with a calibrated confidence. Below your threshold, Colloq takes the
+            escalation branch you declared. A service error is a typed failure, never a
+            silent guess.
+          </p>
+          <div class="table-card">
+            <table>
+              <thead>
+                <tr><th>Request</th><th>Jev picks</th><th class="num">Confidence</th><th>Colloq sends</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>“What are your opening hours?”</td><td><code>cached</code></td><td class="num">0.99</td><td><code>cached</code></td></tr>
+                <tr><td>“How does endpoint projection work?”</td><td><code>infer</code></td><td class="num">0.94</td><td><code class="warn">review</code> <span class="muted">escalated</span></td></tr>
+                <tr><td>“Charged twice, I want a refund.”</td><td><code>review</code></td><td class="num">1.00</td><td><code>review</code></td></tr>
+              </tbody>
+            </table>
+            <p class="table-note">
+              Live run, threshold 0.95. Three requests is a smoke test, not an accuracy
+              measurement.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="band band-ink">
+        <div class="wrap">
+          <p class="kicker">Measured, not claimed</p>
+          <h2>Here is where Colloq loses.</h2>
+          <p class="section-lede">
+            A research language that only publishes its wins is marketing. These numbers come
+            from the checked-in benchmark on an Apple M4, 500 iterations, three tokens.
+          </p>
+          <div class="metrics">
+            <div><strong>1.51×</strong><span>slower than hand-written Rust, whole exchange</span></div>
+            <div><strong>1.83 µs</strong><span>compact checked transition, median</span></div>
+            <div><strong>51.6 µs</strong><span>plan compilation, once per plan</span></div>
+            <div><strong>0.125 µs</strong><span>to start two sessions from a compiled plan</span></div>
+          </div>
+          <p class="section-lede tight">
+            The compact wire is still JSON. The target of 1.25× is not met. There is no
+            hosted product, no scheduler and no SLA. What exists is a checker, a compiler, a
+            reference runtime over four transports, an Automerge draft gate and 76 tests.
+          </p>
+          <a class="btn btn-accent" href="https://github.com/Vantar-AI/colloq/blob/main/docs/benchmark.md">Read the benchmark</a>
+        </div>
+      </section>
+
+      <section class="band band-cta">
+        <div class="wrap center">
+          <h2>Start with the two-node run.</h2>
+          <p class="section-lede">
+            Clone it, compile one conversation, then run the same plan across two processes
+            with mutual authentication.
+          </p>
+          <figure class="terminal terminal-small">
+            <figcaption class="terminal-bar">
+              <span class="lamp"></span><span class="lamp"></span><span class="lamp"></span>
+              <span class="terminal-name">quickstart</span>
+            </figcaption>
+            <pre><code><span class="c-prompt">$</span> git clone https://github.com/Vantar-AI/colloq
+<span class="c-prompt">$</span> cargo run -- check examples/generate.colloqconv.json
+<span class="c-prompt">$</span> cargo run -- bootstrap-two-node --out build/two-node</code></pre>
+          </figure>
+          <div class="hero-actions center-actions">
+            <a class="btn btn-accent" href="https://github.com/Vantar-AI/colloq">Open on GitHub</a>
+            <a class="btn btn-ghost" href="https://github.com/Vantar-AI/colloq/blob/main/docs/two-node.md">Two-node runbook</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="wrap footer-grid">
+        <div>
+          <a class="brand brand-footer" href="/">
+            <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+              <circle cx="9" cy="10" r="4.4" />
+              <circle cx="23" cy="10" r="4.4" />
+              <circle cx="16" cy="23" r="4.4" />
+              <path d="M9 10h14M9.9 13.7 15.1 20M22.1 13.7 16.9 20" />
+            </svg>
+            <span>Colloq</span>
+          </a>
+          <p class="footer-note">
+            An open-source language experiment from Vantar Group LLC. Apache 2.0.
+          </p>
+        </div>
+        <div>
+          <p class="footer-head">Project</p>
+          <a href="https://github.com/Vantar-AI/colloq">GitHub</a>
+          <a href="https://github.com/Vantar-AI/colloq/tree/main/docs">Docs</a>
+          <a href="https://github.com/Vantar-AI/colloq/tree/main/rfcs">RFCs</a>
+          <a href="https://vantar.xyz/colloq/spec/">Schemas</a>
+        </div>
+        <div>
+          <p class="footer-head">Vantar</p>
+          <a href="https://vantar.xyz/colloq">Colloq at Vantar</a>
+          <a href="https://vantar.xyz/coldstack">Coldstack</a>
+          <a href="https://vantar.xyz/privacy">Privacy</a>
+          <a href="https://vantar.xyz/terms">Terms</a>
+        </div>
+      </div>
+      <div class="wrap footer-bottom">
+        <span>© 2026 Vantar Group LLC</span>
+        <span>hello@vantar.xyz</span>
+      </div>
+    </footer>
+  </body>
+</html>

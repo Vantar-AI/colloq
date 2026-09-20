@@ -1,0 +1,15 @@
+name = "colloq-site"
+compatibility_date = "2026-09-20"
+workers_dev = false
+
+[assets]
+directory = "."
+not_found_handling = "404-page"
+
+[[routes]]
+pattern = "colloq.dev"
+custom_domain = true
+
+[[routes]]
+pattern = "www.colloq.dev"
+custom_domain = true
