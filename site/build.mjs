@@ -77,6 +77,7 @@ function shell({ title, description, body, nav = "", activeTop = "", canonical, 
     ["/docs/", "Docs", "docs"],
     ["/spec/", "Spec", "spec"],
     ["/rfcs/", "RFCs", "rfcs"],
+    ["/about/", "About", "about"],
   ]
     .map(([href, label, key]) =>
       `<a href="${href}"${activeTop === key ? ' class="active"' : ""}>${label}</a>`,
@@ -111,7 +112,7 @@ function shell({ title, description, body, nav = "", activeTop = "", canonical, 
       </nav>
       <a class="button small outlined" href="https://github.com/Vantar-AI/colloq">GitHub</a>
     </header>
-    <div class="layout">
+    <div class="layout${nav ? "" : " layout-full"}">
       ${nav}
       <main id="main" class="doc">
 ${body}
@@ -257,6 +258,24 @@ write(
   }),
 );
 
+// About page.
+{
+  const md = fs.readFileSync(path.join(here, "src", "about.md"), "utf8");
+  write(
+    "about",
+    shell({
+      title: "Why Colloq exists",
+      description:
+        "Code is cheap to produce and getting cheaper. What stayed expensive is knowing whether a new version still means the same thing. Colloq is a language built for that.",
+      canonical: "https://colloq.dev/about/",
+      body: `<article class="prose">\n${rewriteLinks(marked.parse(md))}\n</article>`,
+      nav: "",
+      activeTop: "about",
+      wide: true,
+    }),
+  );
+}
+
 // RFC pages.
 for (const rfc of RFCS) {
   const md = fs.readFileSync(path.join(repo, rfc.file), "utf8");
@@ -332,6 +351,7 @@ write(
 // Sitemap.
 const urls = [
   "/",
+  "/about/",
   "/docs/",
   ...DOCS.map((d) => `/docs/${d.slug}/`),
   "/rfcs/",
