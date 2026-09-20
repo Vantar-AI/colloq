@@ -899,3 +899,24 @@ body.app:not(.app-doc) .doc {
   border-radius: var(--border-radius-base);
   padding: 0.0625rem 0.3125rem;
 }
+
+/* ---- 404 ---- */
+
+.not-found .kicker {
+  margin-bottom: 0.75rem;
+}
+.not-found h1 {
+  font-family: var(--font-monospace);
+  font-size: 1.75rem;
+  letter-spacing: -0.01em;
+}
+.not-found .index-list a {
+  border: 1px solid var(--u-color_border_subdued);
+}
+.not-found-note {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--u-color_divider);
+  font-size: var(--font-size-medium);
+  color: var(--u-color_text_subdued);
+}

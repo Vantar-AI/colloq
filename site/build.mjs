@@ -69,7 +69,53 @@ function rewriteLinks(html) {
       name === "README" ? 'href="/"' : 'href="https://github.com/Vantar-AI/colloq/blob/main/CONTRIBUTING.md"',
     )
     .replace(/href="(?:\.\.\/)?(examples|benchmarks|src|scripts)\/([^"]+)"/g,
-      'href="https://github.com/Vantar-AI/colloq/blob/main/$1/$2"');
+      'href="https://github.com/Vantar-AI/colloq/blob/main/$1/$2"')
+    // A sibling link inside docs/ or rfcs/, written without a directory.
+    .replace(/href="\.?\/?([0-9]{4}-[a-z0-9-]+)\.md(#[^"]*)?"/g, (match, name, hash) => {
+      const known = RFCS.find((r) => r.slug.startsWith(name.slice(0, 4)));
+      return known ? `href="/rfcs/${known.slug}/${hash || ""}"` : match;
+    })
+    .replace(/href="\.?\/?([a-z0-9-]+)\.md(#[^"]*)?"/g, (match, name, hash) => {
+      const known = DOCS.find((d) => d.file === `docs/${name}.md`);
+      return known ? `href="/docs/${known.slug}/${hash || ""}"` : match;
+    });
+}
+
+/** Every internal link must resolve, or the build fails. */
+function checkLinks() {
+  const pages = [];
+  const walk = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (entry.name.endsWith(".html")) pages.push(full);
+    }
+  };
+  walk(out);
+
+  const broken = [];
+  for (const page of pages) {
+    const html = fs.readFileSync(page, "utf8");
+    const from = "/" + path.relative(out, page).replace(/index\.html$/, "");
+    for (const match of html.matchAll(/href="([^"]+)"/g)) {
+      const href = match[1];
+      if (/^(https?:|mailto:|#)/.test(href)) continue;
+      if (!href.startsWith("/")) {
+        broken.push(`${from} -> ${href} (relative link was never rewritten)`);
+        continue;
+      }
+      const clean = href.split("#")[0];
+      const target = /\.[a-z0-9]+$/.test(clean)
+        ? path.join(out, clean)
+        : path.join(out, clean, "index.html");
+      if (!fs.existsSync(target)) broken.push(`${from} -> ${href}`);
+    }
+  }
+  if (broken.length) {
+    console.error(`broken internal links:\n  ${broken.join("\n  ")}`);
+    process.exit(1);
+  }
+  return pages.length;
 }
 
 function shell({ title, description, body, nav = "", activeTop = "", canonical, wide = false }) {
@@ -194,8 +240,8 @@ function copyDir(from, to, filter = () => true) {
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(out, { recursive: true });
 
-// Static files: landing page, assets, 404.
-for (const file of ["index.html", "404.html", "_headers"]) {
+// Static files: landing page, headers. The 404 page is generated below.
+for (const file of ["index.html", "_headers"]) {
   fs.copyFileSync(path.join(here, "src", file), path.join(out, file));
 }
 copyDir(path.join(here, "assets"), path.join(out, "assets"));
@@ -348,6 +394,58 @@ write(
   }),
 );
 
+// 404. Served by Cloudflare for any unknown path, so it carries the full shell.
+fs.writeFileSync(
+  path.join(out, "404.html"),
+  shell({
+    title: "404 — no declared transition",
+    description: "That path is not a branch of this conversation.",
+    canonical: "https://colloq.dev/404.html",
+    wide: true,
+    body: `<article class="prose not-found">
+        <p class="kicker">transport.ok · routing.confused</p>
+        <h1>404: no declared transition</h1>
+        <p class="lead">
+          The server checked its plan. Your path is not a branch it declares, so it did
+          what Colloq always does with an answer it cannot type: it took the escalation
+          branch. You are standing in the escalation branch.
+        </p>
+
+        <figure class="code-card" style="margin-bottom: 1.75rem">
+          <figcaption>visit.colloq</figcaption>
+          <pre><code><span class="k">conversation</span> <span class="t">Visit</span>(path: <span class="t">Url</span>) -&gt; <span class="t">Page</span> {
+    <span class="k">roles</span> you, server
+
+    you -&gt; server: path <span class="k">within</span> 20ms
+
+    <span class="k">choice</span> server {
+        docs     { server -&gt; you: <span class="t">Page</span>; <span class="k">end</span> }
+        spec     { server -&gt; you: <span class="t">Schema</span>; <span class="k">end</span> }
+        rfcs     { server -&gt; you: <span class="t">Argument</span>; <span class="k">end</span> }
+        confused { server -&gt; you: <span class="t">ThisPage</span>; <span class="k">end</span> }   <span class="cmt">// ← you are here</span>
+    }
+}</code></pre>
+        </figure>
+
+        <h2>Declared branches</h2>
+        <p>Every one of these resolves. This page is proof that we check.</p>
+        <ul class="index-list" style="max-width: 34rem">
+          <li><a href="/docs/quickstart/"><strong>Quickstart</strong> — ten minutes, one machine</a></li>
+          <li><a href="/docs/"><strong>Documentation</strong> — the model, the wire, the runtime</a></li>
+          <li><a href="/spec/"><strong>Spec</strong> — the schemas, with their identities</a></li>
+          <li><a href="/rfcs/"><strong>RFCs</strong> — the arguments, before the code</a></li>
+          <li><a href="/about/"><strong>Why Colloq exists</strong> — the long answer</a></li>
+          <li><a href="/"><strong>Home</strong> — start over, cleanly</a></li>
+        </ul>
+
+        <p class="not-found-note">
+          No frame was sent to a peer that could not verify its plan identity. The session
+          preface held. Only your URL was wrong.
+        </p>
+      </article>`,
+  }),
+);
+
 // Sitemap.
 const urls = [
   "/",
@@ -369,4 +467,5 @@ fs.writeFileSync(
   "User-agent: *\nAllow: /\nSitemap: https://colloq.dev/sitemap.xml\n",
 );
 
-console.log(`built ${urls.length} pages + ${fs.readdirSync(specOut).length} schemas`);
+const pageCount = checkLinks();
+console.log(`built ${pageCount} pages, every internal link resolves; ${urls.length} in the sitemap + ${fs.readdirSync(specOut).length} schemas`);
