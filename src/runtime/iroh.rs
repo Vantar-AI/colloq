@@ -599,6 +599,9 @@ async fn read_close_marker(receive: &mut RecvStream) -> Result<(), String> {
 
 fn iroh_runtime() -> Result<tokio::runtime::Runtime, RuntimeError> {
     Ok(tokio::runtime::Builder::new_multi_thread()
+        // One two-node run opens two runtimes in one process. Unbounded worker
+        // threads oversubscribe a small CI machine and starve the connection.
+        .worker_threads(2)
         .enable_all()
         .build()?)
 }

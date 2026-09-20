@@ -987,9 +987,10 @@ impl QuicListener {
                 .map_err(|error| RuntimeError::Quic(error.to_string()))?;
         let certificate = CertificateDer::from(cert);
         let private_key = PrivatePkcs8KeyDer::from(signing_key.serialize_der());
-        let server_config =
+        let mut server_config =
             quinn::ServerConfig::with_single_cert(vec![certificate.clone()], private_key.into())
                 .map_err(|error| RuntimeError::Quic(error.to_string()))?;
+        server_config.transport_config(quic_transport_config()?);
         let runtime = quic_runtime()?;
         let endpoint = {
             let _guard = runtime.enter();
@@ -1083,8 +1084,9 @@ impl QuicTransport {
         roots
             .add(CertificateDer::from(trusted_certificate.to_vec()))
             .map_err(|error| RuntimeError::Quic(error.to_string()))?;
-        let client_config = quinn::ClientConfig::with_root_certificates(Arc::new(roots))
+        let mut client_config = quinn::ClientConfig::with_root_certificates(Arc::new(roots))
             .map_err(|error| RuntimeError::Quic(error.to_string()))?;
+        client_config.transport_config(quic_transport_config()?);
         let runtime = quic_runtime()?;
         let endpoint = {
             let _guard = runtime.enter();
@@ -1295,6 +1297,11 @@ impl Transport for QuicTransport {
     fn abort(&mut self) {
         self.connection
             .close(quinn::VarInt::from_u32(1), b"eve typed failure");
+        // close() only queues the frame. Waiting for the endpoint to go idle lets
+        // it leave the host before the runtime drops, so the peer fails at once
+        // instead of waiting out the idle timeout.
+        let endpoint = self._endpoint.clone();
+        self.runtime.block_on(endpoint.wait_idle());
     }
 }
 
@@ -1310,8 +1317,28 @@ async fn read_quic_close_marker(receive: &mut quinn::RecvStream) -> Result<(), S
     Ok(())
 }
 
+/// Shared QUIC transport limits for both ends of a demo connection.
+///
+/// quinn defaults to a 30-second idle timeout with no keep-alive. The demo runs
+/// the client and the server as two threads, each with its own multi-thread
+/// runtime, so a CPU-starved machine can leave one side unscheduled past that
+/// limit. The connection then dies as "connection lost" although nothing failed.
+/// An explicit keep-alive plus a longer idle timeout keeps a slow host alive.
+fn quic_transport_config() -> Result<Arc<quinn::TransportConfig>, RuntimeError> {
+    let mut config = quinn::TransportConfig::default();
+    config.keep_alive_interval(Some(Duration::from_secs(1)));
+    config.max_idle_timeout(Some(
+        quinn::IdleTimeout::try_from(Duration::from_secs(120))
+            .map_err(|error| RuntimeError::Quic(error.to_string()))?,
+    ));
+    Ok(Arc::new(config))
+}
+
 fn quic_runtime() -> Result<tokio::runtime::Runtime, RuntimeError> {
     Ok(tokio::runtime::Builder::new_multi_thread()
+        // One demo opens two runtimes in one process. Unbounded worker threads
+        // oversubscribe a small CI machine and starve the connection.
+        .worker_threads(2)
         .enable_all()
         .build()?)
 }
