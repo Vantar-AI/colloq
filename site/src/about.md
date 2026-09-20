@@ -56,6 +56,29 @@ That is why Colloq starts from the conversation rather than from a syntax. The p
 not a nicer way to write network code. The point is a substrate where meaning is
 checkable, so implementations can be replaced as fast as machines can write them.
 
+## The scoreboard
+
+The core is the typed conversation and the proof that two sides still mean the same thing.
+Everything below is the motivation for building it that way, scored honestly.
+
+| The claim | Colloq today |
+| --- | --- |
+| Code is a derived artifact | **Partly.** Each role's protocol machine is derived and nobody writes it. What a role *does* with a message is still hand-written, and so is the conversation. |
+| Provenance replaces version control | **Not yet.** Content identity makes "the same meaning" computable, which is the hard half. Lineage is specified and implemented nowhere. Git is still the source of truth. |
+| Agents as first-class developers | **Partly.** Typed graph, draft store and promotion gate exist. Typed transactions and enforced capability limits are drafts. |
+| Regeneration evaluated against stability | **No.** The instrument exists, the pre-registered protocol and the published benchmark. The measurements do not. |
+| Adoption inside existing systems | **No, and not on the roadmap.** Colloq replaces the protocol layer or does nothing. That gap is recorded rather than hidden. |
+
+The list above is about one codebase and its history. Colloq's bet is that the hard part is
+the agreement *between* processes: a component is only safe to regenerate if the other side
+can prove the replacement still means the same thing. Regeneration without a checkable
+contract across the network is a faster way to break a distributed system.
+
+What Colloq will not become, no matter how tempting: a general code generator, a
+replacement for version control, or an agent framework. Each would grow the surface and
+weaken the one claim it can defend. The full reasoning is in
+[the goal](/docs/regeneration/).
+
 ## Where the project actually is
 
 Colloq is a v0.1 research prototype under Apache 2.0, and it is honest about the line
