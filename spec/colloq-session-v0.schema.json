@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://vantar.xyz/colloq/spec/colloq-session-v0.schema.json",
+  "$id": "https://colloq.dev/spec/colloq-session-v0.schema.json",
   "title": "Colloq Session Preface v0",
   "type": "object",
   "additionalProperties": false,

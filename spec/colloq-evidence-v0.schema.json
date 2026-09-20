@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://vantar.xyz/colloq/spec/colloq-evidence-v0.schema.json",
+  "$id": "https://colloq.dev/spec/colloq-evidence-v0.schema.json",
   "title": "Colloq Evidence Run v0",
   "description": "A reproducible correctness, security, or performance result for one exact Colloq revision and protocol configuration.",
   "type": "object",

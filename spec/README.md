@@ -14,7 +14,7 @@ This directory contains machine-readable experiments for the canonical Colloq Gr
 - [`colloq-evidence-v0.schema.json`](colloq-evidence-v0.schema.json) — reproducible correctness, security, or performance result tied to one exact revision and protocol configuration.
 - [`colloq-jev-v0.schema.json`](colloq-jev-v0.schema.json) — binds one choice state to one TypeSafe Jev Choice question, with an explicit threshold and escalation branch. See [the Jev chooser](../docs/jev.md).
 
-Published schemas are available at `https://vantar.xyz/colloq/spec/<schema-file>`.
+Published schemas are available at `https://colloq.dev/spec/<schema-file>`.
 
 The JSON representation is an interchange and debugging format. It is not yet the canonical binary encoding and must not be treated as stable.
 

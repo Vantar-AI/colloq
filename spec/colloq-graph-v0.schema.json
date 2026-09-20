@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://vantar.xyz/colloq/spec/colloq-graph-v0.schema.json",
+  "$id": "https://colloq.dev/spec/colloq-graph-v0.schema.json",
   "title": "Colloq Graph v0 experimental interchange",
   "description": "An unstable interchange format for the graph-native Colloq language kernel.",
   "type": "object",

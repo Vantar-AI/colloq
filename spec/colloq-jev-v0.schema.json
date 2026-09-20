@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://vantar.xyz/colloq/spec/colloq-jev-v0.schema.json",
+  "$id": "https://colloq.dev/spec/colloq-jev-v0.schema.json",
   "title": "Colloq Jev Binding v0",
   "description": "Binds one Colloq choice state to one TypeSafe Jev Choice question. The Rust binder additionally checks that the state is a choice, that criteria map to its branches, and that the escalation branch exists.",
   "type": "object",
