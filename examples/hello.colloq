@@ -1,4 +1,4 @@
-// Illustrative Eve syntax. This file is not executable yet.
+// Illustrative Colloq syntax. This file is not executable yet.
 
 type Message {
     id: u128

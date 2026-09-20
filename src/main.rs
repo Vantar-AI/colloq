@@ -1,18 +1,18 @@
 use clap::{Parser, Subcommand, ValueEnum};
-use eve::benchmark::run_reference_benchmark;
-use eve::deploy::{MirenOptions, MirenTransport, render_miren_bundle};
-use eve::draft_exchange::{run_draft_sync_client, run_draft_sync_server};
-use eve::graph::{AutomergeDraft, DraftScalarPatch};
-use eve::node::{AuthorizationPolicy, EndpointTicket, NodeIdentity};
-use eve::plan::{EvePlan, PreparedPlan};
-use eve::runtime::{
+use colloq::benchmark::run_reference_benchmark;
+use colloq::deploy::{MirenOptions, MirenTransport, render_miren_bundle};
+use colloq::draft_exchange::{run_draft_sync_client, run_draft_sync_server};
+use colloq::graph::{AutomergeDraft, DraftScalarPatch};
+use colloq::node::{AuthorizationPolicy, EndpointTicket, NodeIdentity};
+use colloq::plan::{ColloqPlan, PreparedPlan};
+use colloq::runtime::{
     ExecutionReport, FaultOperation, FaultPlan, IrohNode, QuicListener, QuicTransport,
     TcpTransport, WireEncoding, run_generate_client_plan, run_generate_server_plan, run_iroh_demo,
     run_iroh_plan_demo_with_encoding, run_memory_demo, run_memory_fault_demo,
     run_memory_plan_demo_with_encoding, run_quic_demo, run_quic_plan_demo_with_encoding,
     run_tcp_demo, run_tcp_plan_demo_with_encoding,
 };
-use eve::{Conversation, Frame, jev, project, validate, verify_trace};
+use colloq::{Conversation, Frame, jev, project, validate, verify_trace};
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 use std::fs;
@@ -23,7 +23,7 @@ use std::time::Duration;
 
 #[derive(Debug, Parser)]
 #[command(
-    name = "eve",
+    name = "colloq",
     version,
     about = "Experimental compiler for graph-native server conversations"
 )]
@@ -36,14 +36,14 @@ struct Cli {
 enum Command {
     /// Generate one persistent local Iroh identity (private file, mode 0600 on Unix).
     NodeInit {
-        #[arg(long, default_value = "build/node.evenode.json")]
+        #[arg(long, default_value = "build/node.colloqnode.json")]
         out: PathBuf,
     },
     /// Add one exact peer/role/plan grant to a local authorization policy.
     PolicyAllow {
-        #[arg(default_value = "examples/generate.eveconv.json")]
+        #[arg(default_value = "examples/generate.colloqconv.json")]
         conversation: PathBuf,
-        #[arg(long, default_value = "build/eve.authorization.json")]
+        #[arg(long, default_value = "build/colloq.authorization.json")]
         policy: PathBuf,
         #[arg(long)]
         peer: String,
@@ -52,14 +52,14 @@ enum Command {
     },
     /// Create two persistent identities and reciprocal Generate + draft-sync policies.
     BootstrapTwoNode {
-        #[arg(default_value = "examples/generate.eveconv.json")]
+        #[arg(default_value = "examples/generate.colloqconv.json")]
         conversation: PathBuf,
-        #[arg(long, default_value = "examples/draft-sync.eveconv.json")]
+        #[arg(long, default_value = "examples/draft-sync.colloqconv.json")]
         draft_conversation: PathBuf,
         #[arg(long, default_value = "build/two-node")]
         out: PathBuf,
     },
-    /// Validate a global Eve conversation.
+    /// Validate a global Colloq conversation.
     Check {
         conversation: PathBuf,
         /// Emit validation diagnostics as JSON.
@@ -72,25 +72,25 @@ enum Command {
         #[arg(long, default_value = "build/endpoints")]
         out: PathBuf,
     },
-    /// Compile one conversation into a reusable, verified Eve Plan.
+    /// Compile one conversation into a reusable, verified Colloq Plan.
     Compile {
-        #[arg(default_value = "examples/generate.eveconv.json")]
+        #[arg(default_value = "examples/generate.colloqconv.json")]
         conversation: PathBuf,
-        #[arg(long, default_value = "build/generate.eveplan.json")]
+        #[arg(long, default_value = "build/generate.colloqplan.json")]
         out: PathBuf,
     },
     /// Validate a Jev binding against its conversation without calling Jev.
     JevCheck {
-        #[arg(default_value = "examples/route.eveconv.json")]
+        #[arg(default_value = "examples/route.colloqconv.json")]
         conversation: PathBuf,
-        #[arg(default_value = "examples/route.evejev.json")]
+        #[arg(default_value = "examples/route.colloqjev.json")]
         binding: PathBuf,
     },
     /// Ask Jev for one decision at a bound choice state (needs TYPESAFE_API_KEY).
     JevDecide {
-        #[arg(default_value = "examples/route.eveconv.json")]
+        #[arg(default_value = "examples/route.colloqconv.json")]
         conversation: PathBuf,
-        #[arg(default_value = "examples/route.evejev.json")]
+        #[arg(default_value = "examples/route.colloqjev.json")]
         binding: PathBuf,
         /// JSON state for Jev to judge, for example '{"text": "Where is my refund?"}'.
         #[arg(long)]
@@ -98,10 +98,10 @@ enum Command {
         #[arg(long, default_value_t = 10)]
         timeout_seconds: u64,
     },
-    /// Create an Automerge-backed collaborative draft from a validated Eve conversation.
+    /// Create an Automerge-backed collaborative draft from a validated Colloq conversation.
     DraftCreate {
         conversation: PathBuf,
-        #[arg(long, default_value = "build/generate.evedraft")]
+        #[arg(long, default_value = "build/generate.colloqdraft")]
         out: PathBuf,
     },
     /// Apply one optimistic scalar JSON-pointer edit to an Automerge draft.
@@ -117,17 +117,17 @@ enum Command {
         #[arg(long)]
         out: Option<PathBuf>,
     },
-    /// Reject conflicts, validate the materialized graph, and emit canonical Eve artifacts.
+    /// Reject conflicts, validate the materialized graph, and emit canonical Colloq artifacts.
     DraftPromote {
         draft: PathBuf,
-        #[arg(long, default_value = "build/promoted.eveconv.json")]
+        #[arg(long, default_value = "build/promoted.colloqconv.json")]
         conversation_out: PathBuf,
-        #[arg(long, default_value = "build/promoted.eveplan.json")]
+        #[arg(long, default_value = "build/promoted.colloqplan.json")]
         plan_out: PathBuf,
     },
-    /// Generate a Miren app manifest and pinned Rust container for an Eve server.
+    /// Generate a Miren app manifest and pinned Rust container for an Colloq server.
     EmitMiren {
-        #[arg(default_value = "examples/generate.eveconv.json")]
+        #[arg(default_value = "examples/generate.colloqconv.json")]
         conversation: PathBuf,
         #[arg(long)]
         app_name: Option<String>,
@@ -146,9 +146,9 @@ enum Command {
         #[arg(long)]
         internal_only: bool,
     },
-    /// Execute a previously compiled Eve Plan without re-projecting the conversation.
+    /// Execute a previously compiled Colloq Plan without re-projecting the conversation.
     RunPlan {
-        #[arg(default_value = "build/generate.eveplan.json")]
+        #[arg(default_value = "build/generate.colloqplan.json")]
         plan: PathBuf,
         #[arg(long, value_enum, default_value_t = DemoTransport::Memory)]
         transport: DemoTransport,
@@ -172,7 +172,7 @@ enum Command {
     },
     /// Run both projected endpoints using one selectable transport plan.
     Demo {
-        #[arg(default_value = "examples/generate.eveconv.json")]
+        #[arg(default_value = "examples/generate.colloqconv.json")]
         conversation: PathBuf,
         #[arg(long, value_enum, default_value_t = DemoTransport::Memory)]
         transport: DemoTransport,
@@ -190,7 +190,7 @@ enum Command {
     },
     /// Run the memory transport with one deterministic typed transport failure.
     FaultDemo {
-        #[arg(default_value = "examples/generate.eveconv.json")]
+        #[arg(default_value = "examples/generate.colloqconv.json")]
         conversation: PathBuf,
         #[arg(long, default_value = "Exercise typed transport failure.")]
         prompt: String,
@@ -209,16 +209,16 @@ enum Command {
         /// One-based occurrence of the selected operation to fail.
         #[arg(long, default_value_t = 2)]
         fault_at: usize,
-        /// Declared Eve failure ID to observe.
+        /// Declared Colloq failure ID to observe.
         #[arg(long, default_value = "transport.closed")]
         failure: String,
         /// Failure observed by the peer after the injected side aborts.
         #[arg(long)]
         peer_failure: Option<String>,
     },
-    /// Compare the Eve reference memory runtime with a hand-written JSON baseline.
+    /// Compare the Colloq reference memory runtime with a hand-written JSON baseline.
     Benchmark {
-        #[arg(default_value = "examples/generate.eveconv.json")]
+        #[arg(default_value = "examples/generate.colloqconv.json")]
         conversation: PathBuf,
         #[arg(long, default_value = "Measure the conversation runtime.")]
         prompt: String,
@@ -231,7 +231,7 @@ enum Command {
     },
     /// Serve a projected endpoint over TCP.
     Serve {
-        #[arg(default_value = "examples/generate.eveconv.json")]
+        #[arg(default_value = "examples/generate.colloqconv.json")]
         conversation: PathBuf,
         #[arg(long, default_value = "127.0.0.1:7878")]
         listen: SocketAddr,
@@ -244,9 +244,9 @@ enum Command {
         #[arg(long)]
         forever: bool,
     },
-    /// Connect the client endpoint to an Eve TCP server.
+    /// Connect the client endpoint to an Colloq TCP server.
     Connect {
-        #[arg(default_value = "examples/generate.eveconv.json")]
+        #[arg(default_value = "examples/generate.colloqconv.json")]
         conversation: PathBuf,
         #[arg(long, default_value = "127.0.0.1:7878")]
         server: SocketAddr,
@@ -263,12 +263,12 @@ enum Command {
     },
     /// Serve one projected endpoint over authenticated QUIC.
     ServeQuic {
-        #[arg(default_value = "examples/generate.eveconv.json")]
+        #[arg(default_value = "examples/generate.colloqconv.json")]
         conversation: PathBuf,
         #[arg(long, default_value = "127.0.0.1:7879")]
         listen: SocketAddr,
         /// Write the generated public certificate here for the client to pin.
-        #[arg(long, default_value = "build/eve-quic-cert.der")]
+        #[arg(long, default_value = "build/colloq-quic-cert.der")]
         certificate_out: PathBuf,
         #[arg(long, default_value_t = 3)]
         tokens: usize,
@@ -278,11 +278,11 @@ enum Command {
     },
     /// Connect the client endpoint over QUIC using a pinned server certificate.
     ConnectQuic {
-        #[arg(default_value = "examples/generate.eveconv.json")]
+        #[arg(default_value = "examples/generate.colloqconv.json")]
         conversation: PathBuf,
         #[arg(long, default_value = "127.0.0.1:7879")]
         server: SocketAddr,
-        #[arg(long, default_value = "build/eve-quic-cert.der")]
+        #[arg(long, default_value = "build/colloq-quic-cert.der")]
         certificate: PathBuf,
         #[arg(
             long,
@@ -297,9 +297,9 @@ enum Command {
     },
     /// Serve a Generate endpoint as a separate, mutually authenticated Iroh process.
     ServeIroh {
-        #[arg(default_value = "examples/generate.eveconv.json")]
+        #[arg(default_value = "examples/generate.colloqconv.json")]
         conversation: PathBuf,
-        #[arg(long, default_value = "build/two-node/server.evenode.json")]
+        #[arg(long, default_value = "build/two-node/server.colloqnode.json")]
         identity: PathBuf,
         #[arg(long, default_value = "build/two-node/server.authorization.json")]
         policy: PathBuf,
@@ -308,7 +308,7 @@ enum Command {
         /// Publish this routable address instead of the bind address.
         #[arg(long)]
         advertise: Option<SocketAddr>,
-        #[arg(long, default_value = "build/two-node/server.eveendpoint.json")]
+        #[arg(long, default_value = "build/two-node/server.colloqendpoint.json")]
         ticket_out: PathBuf,
         #[arg(long, default_value_t = 3)]
         tokens: usize,
@@ -319,13 +319,13 @@ enum Command {
     },
     /// Connect a Generate endpoint to an authorized Iroh server ticket.
     ConnectIroh {
-        #[arg(default_value = "examples/generate.eveconv.json")]
+        #[arg(default_value = "examples/generate.colloqconv.json")]
         conversation: PathBuf,
-        #[arg(long, default_value = "build/two-node/client.evenode.json")]
+        #[arg(long, default_value = "build/two-node/client.colloqnode.json")]
         identity: PathBuf,
         #[arg(long, default_value = "build/two-node/client.authorization.json")]
         policy: PathBuf,
-        #[arg(long, default_value = "build/two-node/server.eveendpoint.json")]
+        #[arg(long, default_value = "build/two-node/server.colloqendpoint.json")]
         server: PathBuf,
         #[arg(
             long,
@@ -339,13 +339,13 @@ enum Command {
         #[arg(long)]
         report_out: Option<PathBuf>,
     },
-    /// Serve an Automerge draft sync endpoint over an authorized Eve/Iroh session.
+    /// Serve an Automerge draft sync endpoint over an authorized Colloq/Iroh session.
     DraftServeIroh {
-        #[arg(default_value = "examples/draft-sync.eveconv.json")]
+        #[arg(default_value = "examples/draft-sync.colloqconv.json")]
         conversation: PathBuf,
         #[arg(long)]
         draft: PathBuf,
-        #[arg(long, default_value = "build/two-node/server.evenode.json")]
+        #[arg(long, default_value = "build/two-node/server.colloqnode.json")]
         identity: PathBuf,
         #[arg(long, default_value = "build/two-node/server.authorization.json")]
         policy: PathBuf,
@@ -353,31 +353,37 @@ enum Command {
         listen: SocketAddr,
         #[arg(long)]
         advertise: Option<SocketAddr>,
-        #[arg(long, default_value = "build/two-node/draft-server.eveendpoint.json")]
+        #[arg(
+            long,
+            default_value = "build/two-node/draft-server.colloqendpoint.json"
+        )]
         ticket_out: PathBuf,
         #[arg(long, value_enum, default_value_t = WireEncodingArg::Compact)]
         wire: WireEncodingArg,
         #[arg(long)]
         report_out: Option<PathBuf>,
     },
-    /// Synchronize a local Automerge draft with an authorized Eve/Iroh server.
+    /// Synchronize a local Automerge draft with an authorized Colloq/Iroh server.
     DraftConnectIroh {
-        #[arg(default_value = "examples/draft-sync.eveconv.json")]
+        #[arg(default_value = "examples/draft-sync.colloqconv.json")]
         conversation: PathBuf,
         #[arg(long)]
         draft: PathBuf,
-        #[arg(long, default_value = "build/two-node/client.evenode.json")]
+        #[arg(long, default_value = "build/two-node/client.colloqnode.json")]
         identity: PathBuf,
         #[arg(long, default_value = "build/two-node/client.authorization.json")]
         policy: PathBuf,
-        #[arg(long, default_value = "build/two-node/draft-server.eveendpoint.json")]
+        #[arg(
+            long,
+            default_value = "build/two-node/draft-server.colloqendpoint.json"
+        )]
         server: PathBuf,
         #[arg(long, value_enum, default_value_t = WireEncodingArg::Compact)]
         wire: WireEncodingArg,
         #[arg(long)]
         report_out: Option<PathBuf>,
     },
-    /// Verify that independently captured client/server reports describe one Eve session.
+    /// Verify that independently captured client/server reports describe one Colloq session.
     VerifySession {
         #[arg(long)]
         client: PathBuf,
@@ -483,8 +489,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let generate = PreparedPlan::compile(&generate)?;
             let draft: Conversation = read_json(&draft_conversation)?;
             let draft = PreparedPlan::compile(&draft)?;
-            let server_path = out.join("server.evenode.json");
-            let client_path = out.join("client.evenode.json");
+            let server_path = out.join("server.colloqnode.json");
+            let client_path = out.join("client.colloqnode.json");
             let server_policy_path = out.join("server.authorization.json");
             let client_policy_path = out.join("client.authorization.json");
             for path in [
@@ -586,7 +592,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         Command::Compile { conversation, out } => {
             let conversation: Conversation = read_json(&conversation)?;
-            let plan = EvePlan::compile(&conversation)?;
+            let plan = ColloqPlan::compile(&conversation)?;
             if let Some(parent) = out.parent()
                 && !parent.as_os_str().is_empty()
             {
@@ -607,7 +613,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             validate(&conversation)?;
             let mut draft = AutomergeDraft::from_conversation(&conversation)?;
             write_bytes(&out, &draft.save())?;
-            println!("created collaborative Eve draft at {}", out.display());
+            println!("created collaborative Colloq draft at {}", out.display());
         }
         Command::DraftPatch {
             draft,
@@ -628,7 +634,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             )?;
             let out = out.unwrap_or(draft);
             write_bytes(&out, &document.save())?;
-            println!("updated collaborative Eve draft at {}", out.display());
+            println!("updated collaborative Colloq draft at {}", out.display());
         }
         Command::DraftPromote {
             draft,
@@ -691,7 +697,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             tokens,
             cancel_after,
         } => {
-            let artifact: EvePlan = read_json(&plan)?;
+            let artifact: ColloqPlan = read_json(&plan)?;
             let plan = artifact.prepare()?;
             let wire = wire.into();
             let report = match transport {
@@ -792,10 +798,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             verify_deployment_identity(&plan)?;
             let wire = wire.into();
             let listener = TcpListener::bind(listen)?;
-            println!("Eve server listening on {listen}");
+            println!("Colloq server listening on {listen}");
             loop {
                 let (stream, peer) = listener.accept()?;
-                println!("accepted Eve endpoint {peer}");
+                println!("accepted Colloq endpoint {peer}");
                 let mut transport = match wire {
                     WireEncoding::Reference => TcpTransport::from_stream(stream)?,
                     WireEncoding::Compact => TcpTransport::from_stream_compact(stream, &plan)?,
@@ -842,7 +848,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             fs::write(&certificate_out, listener.certificate_der())?;
             println!(
-                "Eve QUIC server listening on {} (certificate: {})",
+                "Colloq QUIC server listening on {} (certificate: {})",
                 listener.local_addr()?,
                 certificate_out.display()
             );
@@ -896,7 +902,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let ticket = endpoint_ticket(&node, advertise)?;
             ticket.save(&ticket_out)?;
             println!(
-                "Eve/Iroh server {} listening; wrote {}",
+                "Colloq/Iroh server {} listening; wrote {}",
                 node.id(),
                 ticket_out.display()
             );
@@ -959,7 +965,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let ticket = endpoint_ticket(&node, advertise)?;
             ticket.save(&ticket_out)?;
             println!(
-                "Eve draft-sync server {} listening; wrote {}",
+                "Colloq draft-sync server {} listening; wrote {}",
                 node.id(),
                 ticket_out.display()
             );
@@ -1017,8 +1023,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 fn verify_deployment_identity(plan: &PreparedPlan) -> Result<(), std::io::Error> {
     for (key, actual) in [
-        ("EVE_PLAN_IDENTITY", plan.plan_identity()),
-        ("EVE_CONVERSATION_IDENTITY", plan.conversation_identity()),
+        ("COLLOQ_PLAN_IDENTITY", plan.plan_identity()),
+        ("COLLOQ_CONVERSATION_IDENTITY", plan.conversation_identity()),
     ] {
         if let Ok(expected) = std::env::var(key)
             && expected != actual
@@ -1052,7 +1058,7 @@ fn endpoint_ticket(
     let advertise = advertise
         .map(Ok)
         .or_else(|| {
-            std::env::var("EVE_ADVERTISE_ADDRESS")
+            std::env::var("COLLOQ_ADVERTISE_ADDRESS")
                 .ok()
                 .map(|value| value.parse::<SocketAddr>())
         })
@@ -1066,14 +1072,14 @@ fn endpoint_ticket(
         .any(|address| address.ip().is_unspecified())
     {
         return Err(Box::new(std::io::Error::other(
-            "a wildcard Iroh listener requires --advertise or EVE_ADVERTISE_ADDRESS",
+            "a wildcard Iroh listener requires --advertise or COLLOQ_ADVERTISE_ADDRESS",
         )));
     }
     Ok(ticket)
 }
 
 fn load_node_identity(path: &Path) -> Result<NodeIdentity, Box<dyn std::error::Error>> {
-    if let Ok(encoded) = std::env::var("EVE_NODE_IDENTITY_JSON") {
+    if let Ok(encoded) = std::env::var("COLLOQ_NODE_IDENTITY_JSON") {
         let identity: NodeIdentity = serde_json::from_str(&encoded)?;
         identity.secret_key()?;
         Ok(identity)
@@ -1085,7 +1091,7 @@ fn load_node_identity(path: &Path) -> Result<NodeIdentity, Box<dyn std::error::E
 fn load_authorization_policy(
     path: &Path,
 ) -> Result<AuthorizationPolicy, Box<dyn std::error::Error>> {
-    if let Ok(encoded) = std::env::var("EVE_AUTHORIZATION_JSON") {
+    if let Ok(encoded) = std::env::var("COLLOQ_AUTHORIZATION_JSON") {
         Ok(serde_json::from_str(&encoded)?)
     } else {
         Ok(AuthorizationPolicy::load(path)?)
@@ -1093,7 +1099,7 @@ fn load_authorization_policy(
 }
 
 fn load_endpoint_ticket(path: &Path) -> Result<EndpointTicket, Box<dyn std::error::Error>> {
-    if let Ok(encoded) = std::env::var("EVE_SERVER_TICKET_JSON") {
+    if let Ok(encoded) = std::env::var("COLLOQ_SERVER_TICKET_JSON") {
         let ticket: EndpointTicket = serde_json::from_str(&encoded)?;
         ticket.endpoint_addr()?;
         Ok(ticket)
@@ -1156,7 +1162,7 @@ fn verify_session_reports(
         && client.tokens == server.tokens;
     if !semantic_trace_equivalent || !outcome_equivalent {
         return Err(std::io::Error::other(
-            "multi-node reports do not describe an equivalent Eve execution",
+            "multi-node reports do not describe an equivalent Colloq execution",
         ));
     }
     Ok(MultiNodeSessionReport {

@@ -1,18 +1,18 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://vantar.xyz/eve/spec/eve-plan-v0.schema.json",
-  "title": "Eve Plan v0",
+  "$id": "https://vantar.xyz/colloq/spec/colloq-plan-v0.schema.json",
+  "title": "Colloq Plan v0",
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "eve_plan",
+    "colloq_plan",
     "conversation",
     "conversation_identity",
     "plan_identity",
     "endpoints"
   ],
   "properties": {
-    "eve_plan": {
+    "colloq_plan": {
       "const": "0.1.0"
     },
     "conversation": {
@@ -155,14 +155,14 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "eve_endpoint",
+        "colloq_endpoint",
         "conversation",
         "role",
         "initial",
         "states"
       ],
       "properties": {
-        "eve_endpoint": {
+        "colloq_endpoint": {
           "const": "0.1.0"
         },
         "conversation": {

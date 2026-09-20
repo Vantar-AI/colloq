@@ -1,4 +1,4 @@
-# RFC-0004: Eve evidence protocol
+# RFC-0004: Colloq evidence protocol
 
 - **Status:** Experimental
 - **Date:** 2026-08-09
@@ -6,7 +6,7 @@
 
 ## Summary
 
-Eve claims that one typed global conversation can project into compatible distributed endpoint
+Colloq claims that one typed global conversation can project into compatible distributed endpoint
 programs while preserving inspectable semantics across transports and deployments. This RFC defines
 how that claim is tested. It pre-registers workloads, baselines, measurements, environments,
 acceptance gates, and reporting rules before the physical-node experiments are run.
@@ -36,7 +36,7 @@ sample window, baseline, or percentile after seeing the output.
 
 ## Non-goals
 
-This RFC does not declare Eve production-ready, select a final wire encoding, promise that Eve is
+This RFC does not declare Colloq production-ready, select a final wire encoding, promise that Colloq is
 faster than conventional RPC, or define production service-level objectives. It does not make
 GitHub-hosted CI a performance laboratory. It defines what evidence must exist before narrower
 claims may be made.
@@ -51,26 +51,26 @@ trace and terminal outcome in a clean network.
 ### H2 — Fail-closed authority
 
 An unknown endpoint, wrong role, wrong plan, wrong conversation, wrong wire encoding, or copied
-channel binding cannot advance an Eve conversation past frame zero.
+channel binding cannot advance an Colloq conversation past frame zero.
 
 ### H3 — Draft convergence without semantic bypass
 
-Conflict-free concurrent Automerge edits synchronize to the same heads and may pass Eve promotion.
-Conflicting meaning converges as document history but is rejected by the Eve promotion gate.
+Conflict-free concurrent Automerge edits synchronize to the same heads and may pass Colloq promotion.
+Conflicting meaning converges as document history but is rejected by the Colloq promotion gate.
 
 ### H4 — Bounded reference overhead
 
-For an equivalent workload and transport, a warm compact Eve session can approach the conventional
-implementation without omitting Eve's state, sequence, identity, or authorization checks.
+For an equivalent workload and transport, a warm compact Colloq session can approach the conventional
+implementation without omitting Colloq's state, sequence, identity, or authorization checks.
 
 ### H5 — Defined failure observations
 
-Network faults produce a declared local Eve outcome or a bounded test failure; they do not silently
+Network faults produce a declared local Colloq outcome or a bounded test failure; they do not silently
 advance, deadlock indefinitely, or fabricate agreement unavailable to either endpoint.
 
 ### H6 — Representative AI value
 
-On a distributed dynamic-batching workload, Eve preserves comparable execution performance while
+On a distributed dynamic-batching workload, Colloq preserves comparable execution performance while
 making protocol state, cancellation, deadlines, placement, and authority more explicit and
 machine-checkable than an equivalent conventional implementation.
 
@@ -126,9 +126,9 @@ Every comparison must use the same payloads, topology, operation count, success 
 connection lifecycle.
 
 1. A hand-written Rust state machine over the same serialization and channel or socket boundary.
-2. Raw Iroh using the same connection and payload framing without Eve projection or checks.
-3. Eve reference wire over Iroh.
-4. Eve compact wire over Iroh.
+2. Raw Iroh using the same connection and payload framing without Colloq projection or checks.
+3. Colloq reference wire over Iroh.
+4. Colloq compact wire over Iroh.
 5. A conventional `tonic` gRPC implementation for W1 and W3.
 
 Comparisons must state which semantic guarantees each baseline omits. Removing identity, ordering,
@@ -148,7 +148,7 @@ replacement.
 
 ### Performance
 
-- connection and Eve-preface latency;
+- connection and Colloq-preface latency;
 - cold and warm session latency;
 - per-transition p50, p95, and p99 latency;
 - end-to-end p50, p95, and p99 latency;
@@ -226,7 +226,7 @@ baseline must run before and after the impaired matrix.
 
 ## Evidence artifact
 
-Every run emits one document conforming to `spec/eve-evidence-v0.schema.json`. It records:
+Every run emits one document conforming to `spec/colloq-evidence-v0.schema.json`. It records:
 
 - repository and exact commit;
 - dirty-worktree status;
@@ -288,5 +288,5 @@ URL and digest from the committed evidence document.
 - Which protected runner provider will host the physical two-node laboratory?
 - Should large raw samples use Git LFS or only GitHub Release assets?
 - Which allocation profiler is sufficiently portable across Linux and macOS?
-- What connection-pooling contract should define a reusable Eve session?
+- What connection-pooling contract should define a reusable Colloq session?
 - Which real model is small enough not to make the first W3 run operationally irreproducible?

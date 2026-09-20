@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://vantar.xyz/eve/spec/eve-node-v0.schema.json",
-  "title": "Eve Local Node Identity v0",
+  "$id": "https://vantar.xyz/colloq/spec/colloq-node-v0.schema.json",
+  "title": "Colloq Local Node Identity v0",
   "description": "Local-only Iroh secret key material. This file must never be sent to a peer or committed.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["eve_node", "endpoint_identity", "secret_key"],
+  "required": ["colloq_node", "endpoint_identity", "secret_key"],
   "properties": {
-    "eve_node": {
+    "colloq_node": {
       "const": "0.1.0"
     },
     "endpoint_identity": {

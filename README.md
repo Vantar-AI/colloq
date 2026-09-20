@@ -1,47 +1,47 @@
 <div align="center">
 
-# Eve
+# Colloq
 
 **The language servers speak to think together.**
 
 **The graph is the program.** Compile computation, communication, placement, and evolution into one executable plan.
 
-[RFC-0002: Conversation](rfcs/0002-conversation-is-the-computation.md) · [RFC-0001: Kernel](rfcs/0001-eve-language-kernel.md) · [Evidence protocol](rfcs/0004-evidence-protocol.md) · [Substrates](docs/substrates.md) · [Two-node](docs/two-node.md) · [Jev chooser](docs/jev.md) · [Plan](docs/plan.md) · [Wire](docs/wire.md) · [Runtime](docs/runtime.md) · [Benchmark](docs/benchmark.md) · [Vision](docs/vision.md) · [Architecture](docs/architecture.md) · [Roadmap](docs/roadmap.md)
+[RFC-0002: Conversation](rfcs/0002-conversation-is-the-computation.md) · [RFC-0001: Kernel](rfcs/0001-colloq-kernel.md) · [Evidence protocol](rfcs/0004-evidence-protocol.md) · [Substrates](docs/substrates.md) · [Two-node](docs/two-node.md) · [Jev chooser](docs/jev.md) · [Plan](docs/plan.md) · [Wire](docs/wire.md) · [Runtime](docs/runtime.md) · [Benchmark](docs/benchmark.md) · [Vision](docs/vision.md) · [Architecture](docs/architecture.md) · [Roadmap](docs/roadmap.md)
 
 </div>
 
 ---
 
 > [!IMPORTANT]
-> Eve is an early research prototype. The repository now contains a conversation checker, endpoint projector, reusable execution-plan compiler, Automerge draft gate, memory/TCP/QUIC/Iroh reference runtime, and Miren deployment adapter. It is not a stable language or production networking system.
+> Colloq is an early research prototype. The repository now contains a conversation checker, endpoint projector, reusable execution-plan compiler, Automerge draft gate, memory/TCP/QUIC/Iroh reference runtime, and Miren deployment adapter. It is not a stable language or production networking system.
 
 AI software is becoming distributed, persistent, and increasingly authored by other software. Its unit of execution is no longer a process on one machine: it is a changing graph of models, tools, memory, accelerators, and services spread across a data center.
 
-Eve explores what a language would look like if that reality were the starting point.
+Colloq explores what a language would look like if that reality were the starting point.
 
 ## The radical path
 
-Eve is not fundamentally a collection of source files. Its source of truth is a **typed, content-addressed conversation graph**. Text, visual tools, and AI operations are lossless projections and editors of that graph. AI systems operate through typed graph queries and transactions rather than being forced to regenerate files.
+Colloq is not fundamentally a collection of source files. Its source of truth is a **typed, content-addressed conversation graph**. Text, visual tools, and AI operations are lossless projections and editors of that graph. AI systems operate through typed graph queries and transactions rather than being forced to regenerate files.
 
 ```text
 text · visual · AI structural edits
               ↕
-       canonical Eve Graph
+       canonical Colloq Graph
           ↙     ↓      ↘
       local   cluster   evolved candidates
 ```
 
-Meaning remains stable and inspectable. Compilers and evolutionary systems may synthesize implementations, placements, encodings, and wire protocols behind those contracts. Read the decision in [RFC-0001: The Eve language kernel](rfcs/0001-eve-language-kernel.md).
+Meaning remains stable and inspectable. Compilers and evolutionary systems may synthesize implementations, placements, encodings, and wire protocols behind those contracts. Read the decision in [RFC-0001: The Colloq language kernel](rfcs/0001-colloq-kernel.md).
 
 ## The conversation is the computation
 
-Eve does not begin with separate client and server programs joined by an API. It begins with one global, typed conversation. The compiler projects that conversation into a local state machine for each server, accelerator, or service. At runtime those endpoints speak Eve Wire: typed transitions that advance their shared computation.
+Colloq does not begin with separate client and server programs joined by an API. It begins with one global, typed conversation. The compiler projects that conversation into a local state machine for each server, accelerator, or service. At runtime those endpoints speak Colloq Wire: typed transitions that advance their shared computation.
 
 Read the model in [RFC-0002: The conversation is the computation](rfcs/0002-conversation-is-the-computation.md).
 
 The following is one possible text projection—not the authoritative representation:
 
-```eve
+```colloq
 conversation Generate(prompt: Prompt) -> stream<Token> {
     roles gateway, router, expert[*]
 
@@ -65,24 +65,24 @@ The Rust prototype implements a deliberately small slice of [RFC-0002](rfcs/0002
 
 ```bash
 # Validate one global server conversation
-cargo run -- check examples/generate.eveconv.json
+cargo run -- check examples/generate.colloqconv.json
 
 # Derive one local protocol machine for each server role
-cargo run -- project examples/generate.eveconv.json
+cargo run -- project examples/generate.colloqconv.json
 
 # Compile and verify reusable endpoint machines once
-cargo run -- compile examples/generate.eveconv.json
+cargo run -- compile examples/generate.colloqconv.json
 
 # Start lightweight sessions from that plan over any implemented transport
-cargo run -- run-plan build/generate.eveplan.json --transport memory
+cargo run -- run-plan build/generate.colloqplan.json --transport memory
 
 # Exchange compact transition IDs while preserving the same semantic trace
-cargo run -- run-plan build/generate.eveplan.json \
+cargo run -- run-plan build/generate.colloqplan.json \
   --wire compact --transport quic
 
 # Accept a valid request → token → cancel conversation
 cargo run -- verify-trace \
-  examples/generate.eveconv.json \
+  examples/generate.colloqconv.json \
   examples/traces/generate-cancel.valid.json
 
 # Execute both endpoints in memory, including explicit cancellation
@@ -100,19 +100,19 @@ cargo run -- demo --transport iroh --tokens 3
 # Create persistent identities and exact peer/role/plan authorization
 cargo run -- bootstrap-two-node --out build/two-node
 
-# Run authenticated Eve endpoints as independent operating-system processes
+# Run authenticated Colloq endpoints as independent operating-system processes
 cargo run -- serve-iroh --listen 127.0.0.1:7880
-cargo run -- connect-iroh --server build/two-node/server.eveendpoint.json
+cargo run -- connect-iroh --server build/two-node/server.colloqendpoint.json
 
 # Create, structurally edit, and safely promote an Automerge-backed draft
-cargo run -- draft-create examples/generate.eveconv.json
-cargo run -- draft-patch build/generate.evedraft \
+cargo run -- draft-create examples/generate.colloqconv.json
+cargo run -- draft-patch build/generate.colloqdraft \
   --pointer /module/semantic_version --value '"0.2.0"'
-cargo run -- draft-promote build/generate.evedraft
+cargo run -- draft-promote build/generate.colloqdraft
 
 # Emit a Miren manifest for either TCP or authenticated Iroh/UDP
-cargo run -- emit-miren examples/generate.eveconv.json
-cargo run -- emit-miren examples/generate.eveconv.json --transport iroh --port 7880
+cargo run -- emit-miren examples/generate.colloqconv.json
+cargo run -- emit-miren examples/generate.colloqconv.json --transport iroh --port 7880
 
 # Give each endpoint its honest local view of an asymmetric failure
 cargo run -- fault-demo --fault-role server \
@@ -128,15 +128,15 @@ cargo run --release --locked -- benchmark \
 cargo test
 ```
 
-Projection produces `build/endpoints/client.endpoint.json` and `server.endpoint.json`. Compilation produces `build/generate.eveplan.json`: a verified, deterministic artifact containing both immutable endpoint graphs and a compact transition dictionary. New sessions share those graphs instead of repeating validation and projection. See [Eve Plan v0](docs/plan.md) and [Eve Wire v0](docs/wire.md).
+Projection produces `build/endpoints/client.endpoint.json` and `server.endpoint.json`. Compilation produces `build/generate.colloqplan.json`: a verified, deterministic artifact containing both immutable endpoint graphs and a compact transition dictionary. New sessions share those graphs instead of repeating validation and projection. See [Colloq Plan v0](docs/plan.md) and [Colloq Wire v0](docs/wire.md).
 
-The invalid trace in `examples/traces/generate-wrong-order.invalid.json` demonstrates the central property: a `token` message has the correct data type, but Eve rejects it when the server has not first selected the `token` conversation branch.
+The invalid trace in `examples/traces/generate-wrong-order.invalid.json` demonstrates the central property: a `token` message has the correct data type, but Colloq rejects it when the server has not first selected the `token` conversation branch.
 
-The runtime derives both endpoints from the same graph. Reference envelopes carry the experimental SHA-256 semantic identity, expected state, and monotonic sequence. The compact path establishes those semantics from the verified plan, then sends only a transition ID, sequence, and optional payload. TCP, QUIC, and Iroh peers first exchange a fail-closed session preface that binds the version, conversation, plan, roles, and exact encoding. Iroh additionally binds the authenticated endpoint identities and concrete TLS connection. Persistent node files, public endpoint tickets, and local authorization policies let independent processes admit an exact remote identity only for an exact Eve role and plan. A demo reports whether both roles observed the same semantic trace even when the transport or encoding changes.
+The runtime derives both endpoints from the same graph. Reference envelopes carry the experimental SHA-256 semantic identity, expected state, and monotonic sequence. The compact path establishes those semantics from the verified plan, then sends only a transition ID, sequence, and optional payload. TCP, QUIC, and Iroh peers first exchange a fail-closed session preface that binds the version, conversation, plan, roles, and exact encoding. Iroh additionally binds the authenticated endpoint identities and concrete TLS connection. Persistent node files, public endpoint tickets, and local authorization policies let independent processes admit an exact remote identity only for an exact Colloq role and plan. A demo reports whether both roles observed the same semantic trace even when the transport or encoding changes.
 
-Transport closure, timeout, reset, unreachable, and uncertainty are declared branches rather than untyped Rust errors. The deterministic fault demo can fail an exact role, operation, and one-based occurrence. An injected server timeout can produce `transport.timeout` locally while the peer records `transport.uncertain`; Eve does not pretend a partition gives both roles identical knowledge.
+Transport closure, timeout, reset, unreachable, and uncertainty are declared branches rather than untyped Rust errors. The deterministic fault demo can fail an exact role, operation, and one-based occurrence. An injected server timeout can produce `transport.timeout` locally while the peer records `transport.uncertain`; Colloq does not pretend a partition gives both roles identical knowledge.
 
-The compact-wire benchmark makes both the gain and remaining cost explicit. Creating two plan-backed sessions took a 125 ns median. Compact transition encoding improved the isolated Eve transition from 2.417 µs to 1.833 µs; warm whole-exchange execution improved from 92.5 µs to 83.6 µs. Compact Eve remained 1.51× the 55.2 µs hand-written baseline, missing the provisional 1.25× target. These are optimization evidence, not general performance claims; see [the benchmark design and limitations](docs/benchmark.md).
+The compact-wire benchmark makes both the gain and remaining cost explicit. Creating two plan-backed sessions took a 125 ns median. Compact transition encoding improved the isolated Colloq transition from 2.417 µs to 1.833 µs; warm whole-exchange execution improved from 92.5 µs to 83.6 µs. Compact Colloq remained 1.51× the 55.2 µs hand-written baseline, missing the provisional 1.25× target. These are optimization evidence, not general performance claims; see [the benchmark design and limitations](docs/benchmark.md).
 
 To run the endpoints as separate processes:
 
@@ -155,22 +155,22 @@ The QUIC commands use a generated certificate that the client pins explicitly:
 ```bash
 # Terminal 1: writes the public certificate, then accepts one QUIC connection
 cargo run -- serve-quic --listen 127.0.0.1:7879 \
-  --wire compact --certificate-out build/eve-quic-cert.der --tokens 4
+  --wire compact --certificate-out build/colloq-quic-cert.der --tokens 4
 
 # Terminal 2: trusts only that exact server certificate
 cargo run -- connect-quic --server 127.0.0.1:7879 \
-  --wire compact --certificate build/eve-quic-cert.der --cancel-after 2
+  --wire compact --certificate build/colloq-quic-cert.der --cancel-after 2
 ```
 
 TCP remains a blocking, plaintext correctness instrument. QUIC adds encryption and pinned server authentication; its plan preface is protected by that TLS connection, but v0 does not authenticate the client. The reference runtime is still blocking and handles one conversation per connection. See [the runtime experiment](docs/runtime.md) for the exact boundary.
 
 ## Pluggable collaboration, transport, and deployment
 
-Eve uses three existing systems behind explicit boundaries:
+Colloq uses three existing systems behind explicit boundaries:
 
-- **Automerge** keeps collaborative draft history. Eve rejects unresolved conflicts and revalidates
+- **Automerge** keeps collaborative draft history. Colloq rejects unresolved conflicts and revalidates
   the materialized graph before assigning executable identities.
-- **Iroh** supplies stable peer identities and encrypted QUIC connectivity. Eve still owns the
+- **Iroh** supplies stable peer identities and encrypted QUIC connectivity. Colloq still owns the
   conversation, plan, role, encoding, and authorization boundary.
 - **Miren** builds and places the current server testbed. Generated manifests bind the expected
   conversation and plan identities, which the server verifies at startup.
@@ -184,11 +184,11 @@ They are experimental adapters, not mandatory language dependencies. See [the co
 boundary](docs/substrates.md), the [two-node runbook](docs/two-node.md), and
 [RFC-0003](rfcs/0003-pluggable-substrates.md).
 
-## Why Eve?
+## Why Colloq?
 
 Current AI infrastructure is assembled from application languages, RPC schemas, orchestration systems, accelerator kernels, collective libraries, and deployment configuration. Each layer has a different model of state, failure, and communication.
 
-Eve aims to make five concerns part of the same program:
+Colloq aims to make five concerns part of the same program:
 
 - **Computation** — what each model or service does.
 - **Communication** — the typed data that moves between nodes.
@@ -202,14 +202,14 @@ This is closer to a language for the data center than a language for an individu
 
 1. **The conversation is the computation.** A global protocol projects into compatible endpoint programs for every participating server.
 2. **Intent is separate from mechanism.** Programs state constraints. The compiler and runtime choose a transport and execution plan.
-3. **AI-native means structural and inspectable.** Eve exposes typed graph queries, transactions, holes, canonical projections, structured diagnostics, and stable semantics.
+3. **AI-native means structural and inspectable.** Colloq exposes typed graph queries, transactions, holes, canonical projections, structured diagnostics, and stable semantics.
 4. **Evolution is governed.** Generated variants run inside explicit capabilities, budgets, tests, and promotion rules. Self-modification is never implicit.
 5. **Copying is a decision.** Ownership, tensor layout, locality, and data movement are represented so zero-copy paths can be used safely.
 6. **Failure is typed.** Timeouts, partial delivery, node loss, and retries belong in function and stream contracts.
 7. **Portable semantics, specialized execution.** The language stays vendor-neutral while backends exploit specific accelerators, NICs, and fabrics.
 8. **Protocols may adapt; meaning stays governed.** Servers can negotiate optimized continuations and wire plans only inside typed, inspectable boundaries.
 
-## What Eve is not
+## What Colloq is not
 
 - A conversational language for agents.
 - A replacement for every kernel language or AI framework.
@@ -217,7 +217,7 @@ This is closer to a language for the data center than a language for an individu
 - A promise that arbitrary self-modifying systems are safe.
 - A thin deployment configuration format.
 
-Eve may compile model computation through projects such as [Nuro](https://github.com/Vantar-AI/nuro), while owning the distributed program around that computation.
+Colloq may compile model computation through projects such as [Nuro](https://github.com/Vantar-AI/nuro), while owning the distributed program around that computation.
 
 ## Repository map
 
@@ -228,41 +228,41 @@ docs/
   architecture.md    Proposed compiler and runtime layers
   substrates.md      Automerge, Iroh, and Miren integration boundaries
   jev.md             Jev as a validated chooser for choice states
-  plan.md            Reusable Eve Plan v0 artifact and session boundary
-  wire.md            Reference and compact Eve Wire encodings
+  plan.md            Reusable Colloq Plan v0 artifact and session boundary
+  wire.md            Reference and compact Colloq Wire encodings
   runtime.md         Executable memory/TCP reference experiment
   benchmark.md       Reproducible conventional-baseline microbenchmark
   language.md        Illustrative language surface
   evolution.md       Governed evolutionary execution
-  prior-art.md       Existing systems and Eve's intended gap
+  prior-art.md       Existing systems and Colloq's intended gap
   roadmap.md         Validation plan from research to prototype
 rfcs/
   0001-...md         Graph-native language-kernel proposal
-  0002-...md         Server conversation and Eve Wire proposal
+  0002-...md         Server conversation and Colloq Wire proposal
   0003-...md         Pluggable substrate experiment
 spec/
-  eve-graph-...json  Experimental machine-readable graph schema
-  eve-conversation-...json  Executable global conversation schema
-  eve-plan-...json   Compiled execution-plan schema
-  eve-session-...json  Plan-bound network-preface schema
-  eve-jev-...json    Jev choice-binding schema
+  colloq-graph-...json  Experimental machine-readable graph schema
+  colloq-conversation-...json  Executable global conversation schema
+  colloq-plan-...json   Compiled execution-plan schema
+  colloq-session-...json  Plan-bound network-preface schema
+  colloq-jev-...json    Jev choice-binding schema
 examples/
-  hello.eve          Minimal server-to-server flow
-  hello.evegraph.json  The same idea as a typed incomplete graph
-  generate.eveconv.json  Executable request/stream/cancel conversation
-  route.eveconv.json     Router choice with a Jev binding (route.evejev.json)
+  hello.colloq          Minimal server-to-server flow
+  hello.colloqgraph.json  The same idea as a typed incomplete graph
+  generate.colloqconv.json  Executable request/stream/cancel conversation
+  route.colloqconv.json     Router choice with a Jev binding (route.colloqjev.json)
   session-preface.compact.json  Compact network-session binding fixture
-  traces/            Valid and deliberately invalid Eve Wire traces
-  evolution.eve      Bounded evolutionary loop
+  traces/            Valid and deliberately invalid Colloq Wire traces
+  evolution.colloq      Bounded evolutionary loop
 src/
-  benchmark.rs       Eve versus hand-written reference benchmark
+  benchmark.rs       Colloq versus hand-written reference benchmark
   deploy.rs          Miren manifest and container adapter
   graph.rs           Automerge draft store and promotion gate
   jev.rs             Jev binding validation and TypeSafe Choice client
   lib.rs             Checker, endpoint projection, trace validation
   plan.rs            Plan compiler, identity, and artifact verification
   runtime.rs         Endpoint executor and memory/TCP/QUIC/Iroh wire plans
-  main.rs            Experimental `eve` CLI
+  main.rs            Experimental `colloq` CLI
 benchmarks/
   reference-...json  Checked-in reference measurement
 ```
@@ -276,11 +276,11 @@ The project begins with questions, not predetermined syntax:
 - Which guarantees belong in the language, the IR, or only in a particular runtime?
 - Can an evolutionary system modify a live distributed program while preserving capabilities and invariants?
 - What is the smallest useful prototype that beats a conventional Rust/Python plus RPC implementation?
-- Should Eve begin as a standalone compiler or as a front end targeting MLIR and existing runtimes?
+- Should Colloq begin as a standalone compiler or as a front end targeting MLIR and existing runtimes?
 
 ## Contributing
 
-Eve is currently a research and language-design project. The most useful contributions are concrete workloads, failure cases, small syntax proposals with lowering semantics, and measurements from real clusters. See [CONTRIBUTING.md](CONTRIBUTING.md).
+Colloq is currently a research and language-design project. The most useful contributions are concrete workloads, failure cases, small syntax proposals with lowering semantics, and measurements from real clusters. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 

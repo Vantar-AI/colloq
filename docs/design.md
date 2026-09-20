@@ -4,7 +4,7 @@ This document records the initial semantic direction. It is a hypothesis to test
 
 ## The graph is the program
 
-Eve's authoritative representation is a canonical typed graph. It is not reconstructed from source files every time a tool needs semantic information.
+Colloq's authoritative representation is a canonical typed graph. It is not reconstructed from source files every time a tool needs semantic information.
 
 The graph separates three artifacts:
 
@@ -12,7 +12,7 @@ The graph separates three artifacts:
 2. **Execution plan** — topology- and backend-specific realization of that meaning.
 3. **History graph** — candidate changes, evidence, approvals, rollout, and lineage.
 
-Text, visual canvases, and AI operations are projections and editors. They must preserve the semantic identity of unchanged graph content. See [RFC-0001](../rfcs/0001-eve-language-kernel.md).
+Text, visual canvases, and AI operations are projections and editors. They must preserve the semantic identity of unchanged graph content. See [RFC-0001](../rfcs/0001-colloq-kernel.md).
 
 ## Identity
 
@@ -62,9 +62,9 @@ An executable constraint controlling capabilities, resource use, placement, data
 
 ## Effects
 
-Eve should make important distributed effects visible in types or signatures:
+Colloq should make important distributed effects visible in types or signatures:
 
-```eve
+```colloq
 fn infer(input: Tensor<f16>) -> Prediction
     uses gpu
     sends telemetry
@@ -98,7 +98,7 @@ Here, “source language” means any authoring projection. The canonical semant
 
 ## Failure
 
-Remote execution introduces failure that a normal function call does not have. Eve must avoid hiding that fact.
+Remote execution introduces failure that a normal function call does not have. Colloq must avoid hiding that fact.
 
 Streams and calls declare applicable behavior: timeout, retry, deduplication, cancellation, reordering, and partial results. “Exactly once” should not be a magical keyword; it must lower to a specific protocol with explicit storage and failure assumptions.
 

@@ -1,8 +1,8 @@
 # Governed evolution
 
-Evolutionary algorithms are a central motivation for Eve, but “the program rewrites itself” is too imprecise and unsafe to serve as a language feature.
+Evolutionary algorithms are a central motivation for Colloq, but “the program rewrites itself” is too imprecise and unsafe to serve as a language feature.
 
-Eve models evolution as a controlled transaction:
+Colloq models evolution as a controlled transaction:
 
 ```text
 parent artifact
@@ -41,7 +41,7 @@ Changing a public schema, acquiring a new capability, weakening a safety gate, o
 
 ## Program variation
 
-Models should manipulate Eve through the typed AST/IR API where possible. Text generation remains useful, but canonical structural edits reduce syntax failures and make provenance precise.
+Models should manipulate Colloq through the typed AST/IR API where possible. Text generation remains useful, but canonical structural edits reduce syntax failures and make provenance precise.
 
 A candidate proposal contains at least:
 

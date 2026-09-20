@@ -1,19 +1,19 @@
 [package]
-name = "eve-language"
+name = "colloq"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.91"
 description = "Experimental graph-native conversation language for distributed AI systems"
 license = "Apache-2.0"
-repository = "https://github.com/Vantar-AI/eve"
+repository = "https://github.com/Vantar-AI/colloq"
 publish = false
 
 [lib]
-name = "eve"
+name = "colloq"
 path = "src/lib.rs"
 
 [[bin]]
-name = "eve"
+name = "colloq"
 path = "src/main.rs"
 
 [dependencies]

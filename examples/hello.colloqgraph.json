@@ -1,6 +1,6 @@
 {
-  "$schema": "../spec/eve-graph-v0.schema.json",
-  "eve_graph": "0.1.0",
+  "$schema": "../spec/colloq-graph-v0.schema.json",
+  "colloq_graph": "0.1.0",
   "module": {
     "id": "example.hello",
     "semantic_version": "0.0.0"
@@ -38,7 +38,7 @@
     "capabilities": [
       {
         "id": "log",
-        "resource": "eve:log",
+        "resource": "colloq:log",
         "permissions": [
           "append"
         ],

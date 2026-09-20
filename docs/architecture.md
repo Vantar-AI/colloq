@@ -1,12 +1,12 @@
 # Architecture
 
-Eve is proposed as a language, compiler, runtime, and wire contract. Those components should be separable so the project can reuse proven infrastructure.
+Colloq is proposed as a language, compiler, runtime, and wire contract. Those components should be separable so the project can reuse proven infrastructure.
 
 ```text
 Text · visual editor · AI graph transactions
     │ parse/project, resolve, type/effect/capability check
     ▼
-Canonical semantic Eve Conversation Graph
+Canonical semantic Colloq Conversation Graph
     ├── History graph: patches, evidence, lineage, promotion
     │
     │ endpoint-project, partition, place, schedule, specialize
@@ -25,14 +25,14 @@ The compiler and graph store should perform progressively lower transformations:
 
 1. Accept a text import or typed graph transaction against a known content identity.
 2. Resolve types, shapes, effects, capabilities, holes, and failure contracts.
-3. Canonicalize and content-address the semantic Eve Graph.
+3. Canonicalize and content-address the semantic Colloq Graph.
 4. Project the global conversation into compatible local endpoint machines.
 5. Partition those machines into cells and communication transitions.
 6. Accept a topology and capability inventory from the target environment.
 7. Produce and cost candidate placement, encoding, and transport plans.
 8. Emit signed artifacts and a reproducible plan manifest.
 
-MLIR is a strong candidate for internal compiler infrastructure, but Eve's portable semantics should not be defined merely as whichever MLIR dialects happen to exist.
+MLIR is a strong candidate for internal compiler infrastructure, but Colloq's portable semantics should not be defined merely as whichever MLIR dialects happen to exist.
 
 ## Runtime
 
@@ -53,7 +53,7 @@ Each endpoint executes a projected local state machine. A frame that is type-cor
 
 ## Wire contract
 
-The semantic graph fixes message meaning while an execution plan chooses representation. The first Eve wire format should prioritize correctness and measurement over novelty:
+The semantic graph fixes message meaning while an execution plan chooses representation. The first Colloq wire format should prioritize correctness and measurement over novelty:
 
 - a small versioned envelope for identity, schema, deadlines, tracing, and capabilities;
 - canonical schema hashes and compatibility rules;
@@ -80,7 +80,7 @@ Initial interoperability should be pragmatic:
 - tensor exchange through established array interfaces where possible;
 - compiler hooks for existing kernel and model compilers.
 
-The prototype should prove that Eve adds semantic and performance value without requiring an entire ecosystem to be rewritten.
+The prototype should prove that Colloq adds semantic and performance value without requiring an entire ecosystem to be rewritten.
 
 ## Current prototype
 
@@ -94,7 +94,7 @@ Conversation v0 JSON
     → representation and semantic validation
     → global conversation state graph
     → client endpoint machine + server endpoint machine
-    → verified, identified Eve Plan v0
+    → verified, identified Colloq Plan v0
       + deterministic compact transition dictionary
     → lightweight sessions over shared endpoint graphs
       + strict plan/role/encoding preface on network connections
@@ -106,6 +106,6 @@ Conversation v0 JSON
     → successful trace equivalence or declared terminal failure
 ```
 
-Each endpoint checks the conversation name, experimental semantic hash, expected state, and sequence before accepting a frame. The compiler validates and projects once into an Eve Plan with its own deterministic identity; sessions share immutable projected graphs. Memory, TCP, QUIC, and Iroh can serialize either the self-describing reference envelope or a plan-backed compact envelope containing only transition ID, sequence, and optional payload. Network peers first exchange a strict session preface binding plan identity, roles, and exact encoding. Iroh additionally binds both authenticated endpoint identities and the concrete TLS connection. Both encodings reconstruct the same semantic trace. The reference `Generate` workload completes normally, through cancellation, or at declared closed/timeout/reset/unreachable/uncertain terminal states without transport-specific application logic. A deterministic wrapper can fail an exact role, transport operation, and occurrence for repeatable, asymmetric counterexamples.
+Each endpoint checks the conversation name, experimental semantic hash, expected state, and sequence before accepting a frame. The compiler validates and projects once into an Colloq Plan with its own deterministic identity; sessions share immutable projected graphs. Memory, TCP, QUIC, and Iroh can serialize either the self-describing reference envelope or a plan-backed compact envelope containing only transition ID, sequence, and optional payload. Network peers first exchange a strict session preface binding plan identity, roles, and exact encoding. Iroh additionally binds both authenticated endpoint identities and the concrete TLS connection. Both encodings reconstruct the same semantic trace. The reference `Generate` workload completes normally, through cancellation, or at declared closed/timeout/reset/unreachable/uncertain terminal states without transport-specific application logic. A deterministic wrapper can fail an exact role, transport operation, and occurrence for repeatable, asymmetric counterexamples.
 
-This runtime remains an experiment rather than a general deployment substrate. It is blocking, supports two static roles, and sends JSON payloads. QUIC authenticates a pinned ephemeral server certificate; Iroh authenticates persistent keys on both endpoints. Automerge contributes draft collaboration without bypassing Eve validation, and Miren packages the current TCP server as a testbed rather than redefining placement semantics. Identity admission, authorization, key rotation, replay-resistant freshness, flow control, structural payload validation from Eve type definitions, deadline enforcement, recovery, and distributed failure agreement remain unimplemented. The [compact-wire measurement](benchmark.md) shows a 1.32× isolated transition improvement and a 1.11× warm-workload improvement, while total overhead remains above target. See [pluggable substrates](substrates.md) for the exact boundary.
+This runtime remains an experiment rather than a general deployment substrate. It is blocking, supports two static roles, and sends JSON payloads. QUIC authenticates a pinned ephemeral server certificate; Iroh authenticates persistent keys on both endpoints. Automerge contributes draft collaboration without bypassing Colloq validation, and Miren packages the current TCP server as a testbed rather than redefining placement semantics. Identity admission, authorization, key rotation, replay-resistant freshness, flow control, structural payload validation from Colloq type definitions, deadline enforcement, recovery, and distributed failure agreement remain unimplemented. The [compact-wire measurement](benchmark.md) shows a 1.32× isolated transition improvement and a 1.11× warm-workload improvement, while total overhead remains above target. See [pluggable substrates](substrates.md) for the exact boundary.

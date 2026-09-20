@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://vantar.xyz/eve/spec/eve-endpoint-v0.schema.json",
-  "title": "Eve Public Endpoint Ticket v0",
-  "description": "Public direct-address information for an authenticated Eve/Iroh node.",
+  "$id": "https://vantar.xyz/colloq/spec/colloq-endpoint-v0.schema.json",
+  "title": "Colloq Public Endpoint Ticket v0",
+  "description": "Public direct-address information for an authenticated Colloq/Iroh node.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["eve_endpoint", "endpoint_identity", "addresses"],
+  "required": ["colloq_endpoint", "endpoint_identity", "addresses"],
   "properties": {
-    "eve_endpoint": {
+    "colloq_endpoint": {
       "const": "0.1.0"
     },
     "endpoint_identity": {

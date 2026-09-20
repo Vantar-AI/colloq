@@ -1,4 +1,4 @@
-//! Persistent Iroh node identities, public direct-address tickets, and Eve role policy.
+//! Persistent Iroh node identities, public direct-address tickets, and Colloq role policy.
 //!
 //! These artifacts are operational inputs. They do not affect conversation content identity.
 
@@ -36,13 +36,13 @@ pub enum NodeError {
     IdentityMismatch { declared: String },
     #[error("endpoint ticket contains no direct IP address")]
     MissingAddress,
-    #[error("peer {peer} is not authorized as role {role} for Eve Plan {plan}")]
+    #[error("peer {peer} is not authorized as role {role} for Colloq Plan {plan}")]
     Unauthorized {
         peer: String,
         role: String,
         plan: String,
     },
-    #[error("authorization policy has no peers for role {role} and Eve Plan {plan}")]
+    #[error("authorization policy has no peers for role {role} and Colloq Plan {plan}")]
     NoAuthorizedPeers { role: String, plan: String },
 }
 
@@ -50,7 +50,7 @@ pub enum NodeError {
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct NodeIdentity {
-    pub eve_node: String,
+    pub colloq_node: String,
     pub endpoint_identity: String,
     pub secret_key: String,
 }
@@ -59,7 +59,7 @@ impl std::fmt::Debug for NodeIdentity {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter
             .debug_struct("NodeIdentity")
-            .field("eve_node", &self.eve_node)
+            .field("colloq_node", &self.colloq_node)
             .field("endpoint_identity", &self.endpoint_identity)
             .field("secret_key", &"[redacted]")
             .finish()
@@ -73,7 +73,7 @@ impl NodeIdentity {
 
     pub fn from_secret_key(secret_key: &SecretKey) -> Self {
         Self {
-            eve_node: NODE_IDENTITY_FORMAT.to_string(),
+            colloq_node: NODE_IDENTITY_FORMAT.to_string(),
             endpoint_identity: secret_key.public().to_string(),
             secret_key: encode_hex(&secret_key.to_bytes()),
         }
@@ -118,7 +118,11 @@ impl NodeIdentity {
     }
 
     pub fn secret_key(&self) -> Result<SecretKey, NodeError> {
-        require_version("Eve node identity", &self.eve_node, NODE_IDENTITY_FORMAT)?;
+        require_version(
+            "Colloq node identity",
+            &self.colloq_node,
+            NODE_IDENTITY_FORMAT,
+        )?;
         let bytes = decode_32_bytes(&self.secret_key)?;
         let secret = SecretKey::from_bytes(&bytes);
         if secret.public().to_string() != self.endpoint_identity {
@@ -134,7 +138,7 @@ impl NodeIdentity {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct EndpointTicket {
-    pub eve_endpoint: String,
+    pub colloq_endpoint: String,
     pub endpoint_identity: String,
     pub addresses: Vec<SocketAddr>,
 }
@@ -142,7 +146,7 @@ pub struct EndpointTicket {
 impl EndpointTicket {
     pub fn from_addr(address: &EndpointAddr) -> Self {
         Self {
-            eve_endpoint: ENDPOINT_TICKET_FORMAT.to_string(),
+            colloq_endpoint: ENDPOINT_TICKET_FORMAT.to_string(),
             endpoint_identity: address.id.to_string(),
             addresses: address.ip_addrs().copied().collect(),
         }
@@ -165,8 +169,8 @@ impl EndpointTicket {
 
     pub fn endpoint_addr(&self) -> Result<EndpointAddr, NodeError> {
         require_version(
-            "Eve endpoint ticket",
-            &self.eve_endpoint,
+            "Colloq endpoint ticket",
+            &self.colloq_endpoint,
             ENDPOINT_TICKET_FORMAT,
         )?;
         if self.addresses.is_empty() {
@@ -185,18 +189,18 @@ pub struct AuthorizationRule {
     pub plan: String,
 }
 
-/// Local allow-list mapping authenticated transport identities onto exact Eve authorities.
+/// Local allow-list mapping authenticated transport identities onto exact Colloq authorities.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct AuthorizationPolicy {
-    pub eve_authorization: String,
+    pub colloq_authorization: String,
     pub rules: Vec<AuthorizationRule>,
 }
 
 impl Default for AuthorizationPolicy {
     fn default() -> Self {
         Self {
-            eve_authorization: AUTHORIZATION_FORMAT.to_string(),
+            colloq_authorization: AUTHORIZATION_FORMAT.to_string(),
             rules: Vec::new(),
         }
     }
@@ -282,8 +286,8 @@ impl AuthorizationPolicy {
 
     fn validate(&self) -> Result<(), NodeError> {
         require_version(
-            "Eve authorization policy",
-            &self.eve_authorization,
+            "Colloq authorization policy",
+            &self.colloq_authorization,
             AUTHORIZATION_FORMAT,
         )?;
         for rule in &self.rules {
@@ -361,7 +365,7 @@ mod tests {
 
     fn plan() -> PreparedPlan {
         let conversation: Conversation =
-            serde_json::from_str(include_str!("../examples/generate.eveconv.json")).unwrap();
+            serde_json::from_str(include_str!("../examples/generate.colloqconv.json")).unwrap();
         PreparedPlan::compile(&conversation).unwrap()
     }
 
@@ -417,7 +421,7 @@ mod tests {
     fn policy_growth_does_not_create_cartesian_product_grants() {
         let client_plan = plan();
         let sync_conversation: Conversation =
-            serde_json::from_str(include_str!("../examples/draft-sync.eveconv.json")).unwrap();
+            serde_json::from_str(include_str!("../examples/draft-sync.colloqconv.json")).unwrap();
         let server_plan = PreparedPlan::compile(&sync_conversation).unwrap();
         let peer = SecretKey::generate().public();
         let mut policy = AuthorizationPolicy::default();

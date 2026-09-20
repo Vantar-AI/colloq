@@ -1,11 +1,11 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://vantar.xyz/eve/spec/eve-session-v0.schema.json",
-  "title": "Eve Session Preface v0",
+  "$id": "https://vantar.xyz/colloq/spec/colloq-session-v0.schema.json",
+  "title": "Colloq Session Preface v0",
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "eve_session",
+    "colloq_session",
     "conversation",
     "conversation_identity",
     "plan_identity",
@@ -13,7 +13,7 @@
     "wire"
   ],
   "properties": {
-    "eve_session": {
+    "colloq_session": {
       "const": "0.1.0"
     },
     "conversation": {

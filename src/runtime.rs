@@ -20,7 +20,7 @@ use thiserror::Error;
 
 mod iroh;
 pub use self::iroh::{
-    EVE_IROH_ALPN, IrohNode, IrohTransport, run_iroh_demo, run_iroh_plan_demo,
+    COLLOQ_IROH_ALPN, IrohNode, IrohTransport, run_iroh_demo, run_iroh_plan_demo,
     run_iroh_plan_demo_with_encoding,
 };
 
@@ -46,7 +46,7 @@ pub(crate) fn network_test_guard() -> MutexGuard<'static, ()> {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct WireEnvelope {
-    pub eve_wire: String,
+    pub colloq_wire: String,
     pub conversation: String,
     pub conversation_identity: String,
     pub state: String,
@@ -71,11 +71,11 @@ impl WireEncoding {
     }
 }
 
-/// The exact contract two network peers bind before exchanging Eve frames.
+/// The exact contract two network peers bind before exchanging Colloq frames.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct SessionPreface {
-    pub eve_session: String,
+    pub colloq_session: String,
     pub conversation: String,
     pub conversation_identity: String,
     pub plan_identity: String,
@@ -122,17 +122,17 @@ pub enum RuntimeError {
     UnknownRole(String),
     #[error("wire codec error: {0}")]
     Codec(#[from] serde_json::Error),
-    #[error("compact Eve Wire error: {0}")]
+    #[error("compact Colloq Wire error: {0}")]
     CompactWire(String),
-    #[error("{0} transport requires a verified Eve session preface")]
+    #[error("{0} transport requires a verified Colloq session preface")]
     SessionRequired(&'static str),
-    #[error("Eve session mismatch for {field}: expected {expected}, received {actual}")]
+    #[error("Colloq session mismatch for {field}: expected {expected}, received {actual}")]
     SessionMismatch {
         field: &'static str,
         expected: String,
         actual: String,
     },
-    #[error("{0} peer rejected the Eve session preface")]
+    #[error("{0} peer rejected the Colloq session preface")]
     SessionRejected(&'static str),
     #[error("transport I/O error: {0}")]
     Io(#[from] std::io::Error),
@@ -140,9 +140,9 @@ pub enum RuntimeError {
     TransportClosed(&'static str),
     #[error("wire envelope is {actual} bytes; the limit is {limit} bytes")]
     EnvelopeTooLarge { actual: usize, limit: usize },
-    #[error("Eve session preface is {actual} bytes; the limit is {limit} bytes")]
+    #[error("Colloq session preface is {actual} bytes; the limit is {limit} bytes")]
     SessionPrefaceTooLarge { actual: usize, limit: usize },
-    #[error("unsupported Eve Wire version {actual}; expected {expected}")]
+    #[error("unsupported Colloq Wire version {actual}; expected {expected}")]
     WireVersion {
         actual: String,
         expected: &'static str,
@@ -436,7 +436,7 @@ impl EndpointMachine {
 
     fn emit(&mut self, frame: Frame, next: String) -> WireEnvelope {
         let envelope = WireEnvelope {
-            eve_wire: WIRE_FORMAT.to_string(),
+            colloq_wire: WIRE_FORMAT.to_string(),
             conversation: self.conversation().to_string(),
             conversation_identity: self.identity().to_string(),
             state: self.current.clone(),
@@ -449,9 +449,9 @@ impl EndpointMachine {
     }
 
     fn validate_envelope(&self, envelope: &WireEnvelope) -> Result<(), RuntimeError> {
-        if envelope.eve_wire != WIRE_FORMAT {
+        if envelope.colloq_wire != WIRE_FORMAT {
             return Err(RuntimeError::WireVersion {
-                actual: envelope.eve_wire.clone(),
+                actual: envelope.colloq_wire.clone(),
                 expected: WIRE_FORMAT,
             });
         }
@@ -665,7 +665,7 @@ impl SessionPreface {
             return Err(RuntimeError::UnknownRole(role.to_string()));
         }
         Ok(Self {
-            eve_session: SESSION_FORMAT.to_string(),
+            colloq_session: SESSION_FORMAT.to_string(),
             conversation: plan.conversation().to_string(),
             conversation_identity: plan.conversation_identity().to_string(),
             plan_identity: plan.plan_identity().to_string(),
@@ -685,7 +685,7 @@ impl SessionPreface {
         if plan.endpoint(expected_role).is_none() {
             return Err(RuntimeError::UnknownRole(expected_role.to_string()));
         }
-        require_session_field("eve_session", SESSION_FORMAT, &self.eve_session)?;
+        require_session_field("colloq_session", SESSION_FORMAT, &self.colloq_session)?;
         require_session_field("conversation", plan.conversation(), &self.conversation)?;
         require_session_field(
             "conversation_identity",
@@ -1286,9 +1286,9 @@ impl Transport for QuicTransport {
                 )));
             }
         }
-        // Reading the peer's explicit Eve close marker acknowledges application completion. The
+        // Reading the peer's explicit Colloq close marker acknowledges application completion. The
         // peer may release its one-shot endpoint immediately afterward, so publishing our FIN is
-        // best-effort and cannot invalidate an already acknowledged Eve close handshake.
+        // best-effort and cannot invalidate an already acknowledged Colloq close handshake.
         let _ = send.finish();
         self.finished = true;
         Ok(())
@@ -1296,7 +1296,7 @@ impl Transport for QuicTransport {
 
     fn abort(&mut self) {
         self.connection
-            .close(quinn::VarInt::from_u32(1), b"eve typed failure");
+            .close(quinn::VarInt::from_u32(1), b"colloq typed failure");
         // close() only queues the frame. Waiting for the endpoint to go idle lets
         // it leave the host before the runtime drops, so the peer fails at once
         // instead of waiting out the idle timeout.
@@ -1312,7 +1312,7 @@ async fn read_quic_close_marker(receive: &mut quinn::RecvStream) -> Result<(), S
         .await
         .map_err(|error| error.to_string())?;
     if u32::from_be_bytes(marker) != 0 {
-        return Err("expected Eve QUIC close marker".to_string());
+        return Err("expected Colloq QUIC close marker".to_string());
     }
     Ok(())
 }
@@ -1393,9 +1393,9 @@ impl EnvelopeCodec {
 
 impl CompactWireCodec {
     fn encode(&self, envelope: &WireEnvelope) -> Result<Vec<u8>, RuntimeError> {
-        if envelope.eve_wire != WIRE_FORMAT {
+        if envelope.colloq_wire != WIRE_FORMAT {
             return Err(RuntimeError::WireVersion {
-                actual: envelope.eve_wire.clone(),
+                actual: envelope.colloq_wire.clone(),
                 expected: WIRE_FORMAT,
             });
         }
@@ -1479,7 +1479,7 @@ impl CompactWireCodec {
             }
         };
         Ok(WireEnvelope {
-            eve_wire: WIRE_FORMAT.to_string(),
+            colloq_wire: WIRE_FORMAT.to_string(),
             conversation: self.conversation.clone(),
             conversation_identity: self.conversation_identity.clone(),
             state: transition.state.clone(),
@@ -2123,7 +2123,7 @@ fn receive_and_record<T: Transport>(
 }
 
 fn trace_identity(trace: &[Frame]) -> String {
-    let encoded = serde_json::to_vec(trace).expect("Eve frames always serialize");
+    let encoded = serde_json::to_vec(trace).expect("Colloq frames always serialize");
     let digest = Sha256::digest(encoded);
     let mut identity = String::with_capacity(7 + digest.len() * 2);
     identity.push_str("sha256:");
@@ -2182,10 +2182,10 @@ fn demo_report(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::plan::EvePlan;
+    use crate::plan::ColloqPlan;
 
     fn conversation() -> Conversation {
-        serde_json::from_str(include_str!("../examples/generate.eveconv.json")).unwrap()
+        serde_json::from_str(include_str!("../examples/generate.colloqconv.json")).unwrap()
     }
 
     #[test]
@@ -2232,7 +2232,7 @@ mod tests {
 
     #[test]
     fn plan_sessions_share_the_projected_endpoint_graph() {
-        let artifact = EvePlan::compile(&conversation()).unwrap();
+        let artifact = ColloqPlan::compile(&conversation()).unwrap();
         let plan = artifact.prepare().unwrap();
         let first = EndpointMachine::from_plan(&plan, "client").unwrap();
         let second = EndpointMachine::from_plan(&plan, "client").unwrap();
@@ -2309,7 +2309,7 @@ mod tests {
             fixture,
             SessionPreface::for_plan(&plan, "client", WireEncoding::Compact).unwrap()
         );
-        assert_eq!(encode_session_preface(&fixture).unwrap().len(), 278);
+        assert_eq!(encode_session_preface(&fixture).unwrap().len(), 281);
     }
 
     #[test]
@@ -2623,7 +2623,7 @@ mod tests {
         let prompt = client.emit_data(json!({ "text": "hello" })).unwrap();
         server.accept(prompt).unwrap();
         let wrong = WireEnvelope {
-            eve_wire: WIRE_FORMAT.to_string(),
+            colloq_wire: WIRE_FORMAT.to_string(),
             conversation: server.conversation().to_string(),
             conversation_identity: server.identity().to_string(),
             state: server.current_state().to_string(),

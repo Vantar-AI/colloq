@@ -2,10 +2,10 @@
 //!
 //! This deliberately compares two implementations of the same tiny request/token/done
 //! exchange over in-process channels and JSON serialization. It measures reference-runtime
-//! overhead, not network or model performance, and makes no claim that Eve is faster.
+//! overhead, not network or model performance, and makes no claim that Colloq is faster.
 
 use crate::Conversation;
-use crate::plan::{EvePlan, PlanError, PreparedPlan};
+use crate::plan::{ColloqPlan, PlanError, PreparedPlan};
 use crate::runtime::{
     EndpointMachine, PreparedCompactRoundTrip, RuntimeError, WireEncoding, WireEnvelope,
     run_memory_plan_demo, run_memory_plan_demo_with_encoding,
@@ -35,7 +35,7 @@ pub enum BenchmarkError {
 
 #[derive(Debug, Clone, Serialize)]
 pub struct BenchmarkConfig {
-    pub eve_version: &'static str,
+    pub colloq_version: &'static str,
     pub iterations: usize,
     pub warmup_iterations: usize,
     pub tokens: usize,
@@ -58,14 +58,14 @@ pub struct BenchmarkStats {
 pub struct BenchmarkReport {
     pub benchmark: &'static str,
     pub config: BenchmarkConfig,
-    pub eve_compile: BenchmarkStats,
-    pub eve_session_startup: BenchmarkStats,
-    pub eve_checked_transition: BenchmarkStats,
-    pub eve_compact_checked_transition: BenchmarkStats,
+    pub colloq_compile: BenchmarkStats,
+    pub colloq_session_startup: BenchmarkStats,
+    pub colloq_checked_transition: BenchmarkStats,
+    pub colloq_compact_checked_transition: BenchmarkStats,
     pub baseline_json_transition: BenchmarkStats,
-    pub eve_cold: BenchmarkStats,
-    pub eve_warm: BenchmarkStats,
-    pub eve_compact_warm: BenchmarkStats,
+    pub colloq_cold: BenchmarkStats,
+    pub colloq_warm: BenchmarkStats,
+    pub colloq_compact_warm: BenchmarkStats,
     pub conventional_baseline: BenchmarkStats,
     pub cold_median_overhead_ratio: f64,
     pub warm_median_overhead_ratio: f64,
@@ -77,11 +77,11 @@ pub struct BenchmarkReport {
     pub notes: Vec<&'static str>,
 }
 
-/// Compare the Eve reference memory runtime with a hand-written JSON protocol.
+/// Compare the Colloq reference memory runtime with a hand-written JSON protocol.
 ///
 /// Both variants create two worker threads, cross in-process channels, serialize every
-/// protocol message to JSON, and complete the same request/token/done exchange. Cold Eve
-/// compiles first; warm Eve reuses a verified plan. Separate samples expose session startup
+/// protocol message to JSON, and complete the same request/token/done exchange. Cold Colloq
+/// compiles first; warm Colloq reuses a verified plan. Separate samples expose session startup
 /// and one checked JSON transition.
 pub fn run_reference_benchmark(
     conversation: &Conversation,
@@ -109,8 +109,8 @@ pub fn run_reference_benchmark(
 
     let mut compile_samples = Vec::with_capacity(iterations);
     let mut session_samples = Vec::with_capacity(iterations);
-    let mut eve_transition_samples = Vec::with_capacity(iterations);
-    let mut eve_compact_transition_samples = Vec::with_capacity(iterations);
+    let mut colloq_transition_samples = Vec::with_capacity(iterations);
+    let mut colloq_compact_transition_samples = Vec::with_capacity(iterations);
     let mut baseline_transition_samples = Vec::with_capacity(iterations);
     let mut cold_samples = Vec::with_capacity(iterations);
     let mut warm_samples = Vec::with_capacity(iterations);
@@ -138,8 +138,8 @@ pub fn run_reference_benchmark(
         session_samples.push(measure_session_startup(&plan)?);
         for offset in 0..3 {
             match (index + offset) % 3 {
-                0 => eve_transition_samples.push(measure_eve_checked_transition(&plan, prompt)?),
-                1 => eve_compact_transition_samples
+                0 => colloq_transition_samples.push(measure_eve_checked_transition(&plan, prompt)?),
+                1 => colloq_compact_transition_samples
                     .push(measure_eve_compact_checked_transition(&plan, prompt)?),
                 2 => baseline_transition_samples.push(measure_baseline_json_transition(prompt)?),
                 _ => unreachable!("modulo three is in range"),
@@ -147,33 +147,34 @@ pub fn run_reference_benchmark(
         }
     }
 
-    let eve_compile = stats(compile_samples);
-    let eve_session_startup = stats(session_samples);
-    let eve_checked_transition = stats(eve_transition_samples);
-    let eve_compact_checked_transition = stats(eve_compact_transition_samples);
+    let colloq_compile = stats(compile_samples);
+    let colloq_session_startup = stats(session_samples);
+    let colloq_checked_transition = stats(colloq_transition_samples);
+    let colloq_compact_checked_transition = stats(colloq_compact_transition_samples);
     let baseline_json_transition = stats(baseline_transition_samples);
-    let eve_cold = stats(cold_samples);
-    let eve_warm = stats(warm_samples);
-    let eve_compact_warm = stats(compact_warm_samples);
+    let colloq_cold = stats(cold_samples);
+    let colloq_warm = stats(warm_samples);
+    let colloq_compact_warm = stats(compact_warm_samples);
     let conventional_baseline = stats(baseline_samples);
     let cold_median_overhead_ratio =
-        eve_cold.median_ns as f64 / conventional_baseline.median_ns.max(1) as f64;
+        colloq_cold.median_ns as f64 / conventional_baseline.median_ns.max(1) as f64;
     let warm_median_overhead_ratio =
-        eve_warm.median_ns as f64 / conventional_baseline.median_ns.max(1) as f64;
+        colloq_warm.median_ns as f64 / conventional_baseline.median_ns.max(1) as f64;
     let compact_warm_median_overhead_ratio =
-        eve_compact_warm.median_ns as f64 / conventional_baseline.median_ns.max(1) as f64;
-    let warm_speedup_over_cold = eve_cold.median_ns as f64 / eve_warm.median_ns.max(1) as f64;
+        colloq_compact_warm.median_ns as f64 / conventional_baseline.median_ns.max(1) as f64;
+    let warm_speedup_over_cold = colloq_cold.median_ns as f64 / colloq_warm.median_ns.max(1) as f64;
     let compact_speedup_over_reference =
-        eve_warm.median_ns as f64 / eve_compact_warm.median_ns.max(1) as f64;
-    let transition_median_overhead_ratio =
-        eve_checked_transition.median_ns as f64 / baseline_json_transition.median_ns.max(1) as f64;
-    let compact_transition_median_overhead_ratio = eve_compact_checked_transition.median_ns as f64
+        colloq_warm.median_ns as f64 / colloq_compact_warm.median_ns.max(1) as f64;
+    let transition_median_overhead_ratio = colloq_checked_transition.median_ns as f64
+        / baseline_json_transition.median_ns.max(1) as f64;
+    let compact_transition_median_overhead_ratio = colloq_compact_checked_transition.median_ns
+        as f64
         / baseline_json_transition.median_ns.max(1) as f64;
 
     Ok(BenchmarkReport {
         benchmark: "request-token-done/json-channels/v0",
         config: BenchmarkConfig {
-            eve_version: env!("CARGO_PKG_VERSION"),
+            colloq_version: env!("CARGO_PKG_VERSION"),
             iterations,
             warmup_iterations,
             tokens,
@@ -186,14 +187,14 @@ pub fn run_reference_benchmark(
             target_os: std::env::consts::OS,
             target_arch: std::env::consts::ARCH,
         },
-        eve_compile,
-        eve_session_startup,
-        eve_checked_transition,
-        eve_compact_checked_transition,
+        colloq_compile,
+        colloq_session_startup,
+        colloq_checked_transition,
+        colloq_compact_checked_transition,
         baseline_json_transition,
-        eve_cold,
-        eve_warm,
-        eve_compact_warm,
+        colloq_cold,
+        colloq_warm,
+        colloq_compact_warm,
         conventional_baseline,
         cold_median_overhead_ratio,
         warm_median_overhead_ratio,
@@ -205,9 +206,9 @@ pub fn run_reference_benchmark(
         notes: vec![
             "This is a local reference-runtime microbenchmark, not a production performance claim.",
             "Every full-workload variant includes thread creation, channels, JSON encoding, and JSON decoding in every sample.",
-            "Eve cold includes validation, identity, projection, session startup, state-machine checks, and full wire envelopes.",
-            "Eve warm reuses a verified plan but still includes session startup, state-machine checks, and full wire envelopes.",
-            "Eve compact warm reuses the same verified plan and exchanges transition ID, sequence, and optional payload instead of repeated semantic strings.",
+            "Colloq cold includes validation, identity, projection, session startup, state-machine checks, and full wire envelopes.",
+            "Colloq warm reuses a verified plan but still includes session startup, state-machine checks, and full wire envelopes.",
+            "Colloq compact warm reuses the same verified plan and exchanges transition ID, sequence, and optional payload instead of repeated semantic strings.",
             "Checked-transition samples exclude session creation and channels; they include two local machine transitions plus reference or compact envelope JSON encoding and decoding.",
             "Run the release binary on an otherwise idle machine and compare saved reports, not isolated runs.",
         ],
@@ -215,7 +216,7 @@ pub fn run_reference_benchmark(
 }
 
 fn run_compile_iteration(conversation: &Conversation) -> Result<(), BenchmarkError> {
-    let plan = black_box(EvePlan::compile(conversation)?);
+    let plan = black_box(ColloqPlan::compile(conversation)?);
     if plan.endpoints.len() != 2 {
         return Err(BenchmarkError::Protocol(
             "compiled plan did not contain two endpoints".to_string(),
@@ -245,7 +246,7 @@ fn run_eve_warm_iteration(
         || report.server.tokens.len() != tokens
     {
         return Err(BenchmarkError::Protocol(
-            "Eve reference iteration did not complete the requested workload".to_string(),
+            "Colloq reference iteration did not complete the requested workload".to_string(),
         ));
     }
     Ok(())
@@ -269,7 +270,7 @@ fn run_eve_compact_warm_iteration(
         || report.server.tokens.len() != tokens
     {
         return Err(BenchmarkError::Protocol(
-            "Eve compact iteration did not complete the requested workload".to_string(),
+            "Colloq compact iteration did not complete the requested workload".to_string(),
         ));
     }
     Ok(())
@@ -476,7 +477,7 @@ mod tests {
     use super::*;
 
     fn example() -> Conversation {
-        serde_json::from_str(include_str!("../examples/generate.eveconv.json"))
+        serde_json::from_str(include_str!("../examples/generate.colloqconv.json"))
             .expect("example conversation")
     }
 
@@ -485,14 +486,14 @@ mod tests {
         let report = run_reference_benchmark(&example(), "benchmark", 2, 3, 1).unwrap();
         assert_eq!(report.config.iterations, 3);
         assert_eq!(report.config.tokens, 2);
-        assert!(report.eve_compile.median_ns > 0);
-        assert!(report.eve_session_startup.median_ns > 0);
-        assert!(report.eve_checked_transition.median_ns > 0);
-        assert!(report.eve_compact_checked_transition.median_ns > 0);
+        assert!(report.colloq_compile.median_ns > 0);
+        assert!(report.colloq_session_startup.median_ns > 0);
+        assert!(report.colloq_checked_transition.median_ns > 0);
+        assert!(report.colloq_compact_checked_transition.median_ns > 0);
         assert!(report.baseline_json_transition.median_ns > 0);
-        assert!(report.eve_cold.median_ns > 0);
-        assert!(report.eve_warm.median_ns > 0);
-        assert!(report.eve_compact_warm.median_ns > 0);
+        assert!(report.colloq_cold.median_ns > 0);
+        assert!(report.colloq_warm.median_ns > 0);
+        assert!(report.colloq_compact_warm.median_ns > 0);
         assert!(report.conventional_baseline.median_ns > 0);
         assert!(report.cold_median_overhead_ratio.is_finite());
         assert!(report.warm_median_overhead_ratio.is_finite());

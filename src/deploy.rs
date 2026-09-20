@@ -1,15 +1,15 @@
-//! Deployment adapters. These translate validated Eve semantics into infrastructure artifacts;
+//! Deployment adapters. These translate validated Colloq semantics into infrastructure artifacts;
 //! they do not become part of the language's meaning.
 
 use crate::Conversation;
-use crate::plan::{EvePlan, PlanError};
+use crate::plan::{ColloqPlan, PlanError};
 use crate::runtime::WireEncoding;
 use serde::Serialize;
 use std::collections::BTreeMap;
 use std::path::{Component, Path, PathBuf};
 use thiserror::Error;
 
-const MIREN_DOCKERFILE: &str = ".miren/Dockerfile.eve";
+const MIREN_DOCKERFILE: &str = ".miren/Dockerfile.colloq";
 
 #[derive(Debug, Error)]
 pub enum DeploymentError {
@@ -30,14 +30,14 @@ pub struct MirenOptions {
     pub instances: usize,
     pub wire: WireEncoding,
     pub transport: MirenTransport,
-    /// Expose the raw Eve TCP or Iroh/UDP port on the Miren node.
+    /// Expose the raw Colloq TCP or Iroh/UDP port on the Miren node.
     pub node_port: bool,
 }
 
 impl MirenOptions {
     pub fn for_conversation(conversation: &Conversation, source: impl Into<PathBuf>) -> Self {
         Self {
-            app_name: format!("eve-{}", miren_slug(&conversation.module.id)),
+            app_name: format!("colloq-{}", miren_slug(&conversation.module.id)),
             conversation_source: source.into(),
             port: 7878,
             tokens: 3,
@@ -66,7 +66,7 @@ pub struct MirenBundle {
 
 /// Render a self-contained Miren adapter for the current executable Generate runtime.
 ///
-/// Miren provides build, placement, restart, and L4 forwarding. Eve still validates the
+/// Miren provides build, placement, restart, and L4 forwarding. Colloq still validates the
 /// conversation and owns plan/session identities. The TCP mode is an unauthenticated correctness
 /// testbed. The Iroh mode exposes UDP and requires persistent identity, exact authorization, and
 /// an advertised routable address through deployment configuration.
@@ -75,7 +75,7 @@ pub fn render_miren_bundle(
     options: &MirenOptions,
 ) -> Result<MirenBundle, DeploymentError> {
     validate_options(conversation, options)?;
-    let plan = EvePlan::compile(conversation)?;
+    let plan = ColloqPlan::compile(conversation)?;
     let wire = match options.wire {
         WireEncoding::Reference => "reference",
         WireEncoding::Compact => "compact",
@@ -86,33 +86,33 @@ pub fn render_miren_bundle(
         .ok_or_else(|| DeploymentError::Invalid("conversation path must be UTF-8".to_string()))?;
     let command = match options.transport {
         MirenTransport::Tcp => format!(
-            "/bin/eve serve /etc/eve/conversation.json --listen 0.0.0.0:{} --tokens {} --wire {} --forever",
+            "/bin/colloq serve /etc/colloq/conversation.json --listen 0.0.0.0:{} --tokens {} --wire {} --forever",
             options.port, options.tokens, wire
         ),
         MirenTransport::Iroh => format!(
-            "/bin/eve serve-iroh /etc/eve/conversation.json --identity /run/eve/server.evenode.json --policy /run/eve/server.authorization.json --listen 0.0.0.0:{} --ticket-out /tmp/server.eveendpoint.json --tokens {} --wire {}",
+            "/bin/colloq serve-iroh /etc/colloq/conversation.json --identity /run/colloq/server.colloqnode.json --policy /run/colloq/server.authorization.json --listen 0.0.0.0:{} --ticket-out /tmp/server.colloqendpoint.json --tokens {} --wire {}",
             options.port, options.tokens, wire
         ),
     };
 
     let mut env = vec![
-        MirenEnv::value("EVE_PLAN_IDENTITY", &plan.plan_identity),
-        MirenEnv::value("EVE_CONVERSATION_IDENTITY", &plan.conversation_identity),
+        MirenEnv::value("COLLOQ_PLAN_IDENTITY", &plan.plan_identity),
+        MirenEnv::value("COLLOQ_CONVERSATION_IDENTITY", &plan.conversation_identity),
     ];
     if options.transport == MirenTransport::Iroh {
         env.extend([
             MirenEnv::required(
-                "EVE_NODE_IDENTITY_JSON",
+                "COLLOQ_NODE_IDENTITY_JSON",
                 true,
-                "Local Eve node identity JSON; contains the Iroh private key.",
+                "Local Colloq node identity JSON; contains the Iroh private key.",
             ),
             MirenEnv::required(
-                "EVE_AUTHORIZATION_JSON",
+                "COLLOQ_AUTHORIZATION_JSON",
                 true,
                 "Exact peer/role/plan authorization policy JSON.",
             ),
             MirenEnv::required(
-                "EVE_ADVERTISE_ADDRESS",
+                "COLLOQ_ADVERTISE_ADDRESS",
                 false,
                 "Public or overlay socket address advertised in the endpoint ticket.",
             ),
@@ -131,7 +131,7 @@ pub fn render_miren_bundle(
                 command,
                 ports: vec![MirenPort {
                     port: options.port,
-                    name: "eve".to_string(),
+                    name: "colloq".to_string(),
                     protocol: match options.transport {
                         MirenTransport::Tcp => "tcp",
                         MirenTransport::Iroh => "udp",
@@ -149,7 +149,7 @@ pub fn render_miren_bundle(
     };
 
     let dockerfile = format!(
-        "FROM rust:1.96-bookworm AS build\nWORKDIR /src\nCOPY Cargo.toml Cargo.lock ./\nCOPY src ./src\nRUN cargo build --release --locked\n\nFROM debian:bookworm-slim\nRUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*\nCOPY --from=build /src/target/release/eve /bin/eve\nCOPY {source} /etc/eve/conversation.json\nCOPY examples/draft-sync.eveconv.json /etc/eve/draft-sync.eveconv.json\nUSER 65532:65532\n"
+        "FROM rust:1.96-bookworm AS build\nWORKDIR /src\nCOPY Cargo.toml Cargo.lock ./\nCOPY src ./src\nRUN cargo build --release --locked\n\nFROM debian:bookworm-slim\nRUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*\nCOPY --from=build /src/target/release/colloq /bin/colloq\nCOPY {source} /etc/colloq/conversation.json\nCOPY examples/draft-sync.colloqconv.json /etc/colloq/draft-sync.colloqconv.json\nUSER 65532:65532\n"
     );
 
     Ok(MirenBundle {
@@ -173,7 +173,7 @@ fn validate_options(
     }
     if options.port == 0 {
         return Err(DeploymentError::Invalid(
-            "the Eve service port cannot be zero".to_string(),
+            "the Colloq service port cannot be zero".to_string(),
         ));
     }
     if options.instances == 0 {
@@ -318,17 +318,17 @@ mod tests {
     use super::*;
 
     fn conversation() -> Conversation {
-        serde_json::from_str(include_str!("../examples/generate.eveconv.json")).unwrap()
+        serde_json::from_str(include_str!("../examples/generate.colloqconv.json")).unwrap()
     }
 
     #[test]
     fn miren_bundle_is_parseable_and_plan_bound() {
         let conversation = conversation();
         let options =
-            MirenOptions::for_conversation(&conversation, "examples/generate.eveconv.json");
+            MirenOptions::for_conversation(&conversation, "examples/generate.colloqconv.json");
         let bundle = render_miren_bundle(&conversation, &options).unwrap();
         let manifest: toml::Value = toml::from_str(&bundle.app_toml).unwrap();
-        assert_eq!(manifest["name"].as_str(), Some("eve-example-generate"));
+        assert_eq!(manifest["name"].as_str(), Some("colloq-example-generate"));
         assert_eq!(
             manifest["services"]["server"]["ports"][0]["type"].as_str(),
             Some("tcp")
@@ -339,7 +339,7 @@ mod tests {
         assert!(
             bundle
                 .dockerfile
-                .contains("COPY examples/generate.eveconv.json /etc/eve/conversation.json")
+                .contains("COPY examples/generate.colloqconv.json /etc/colloq/conversation.json")
         );
     }
 
@@ -357,7 +357,7 @@ mod tests {
     fn miren_iroh_bundle_exposes_udp_and_requires_private_configuration() {
         let conversation = conversation();
         let mut options =
-            MirenOptions::for_conversation(&conversation, "examples/generate.eveconv.json");
+            MirenOptions::for_conversation(&conversation, "examples/generate.colloqconv.json");
         options.transport = MirenTransport::Iroh;
         let bundle = render_miren_bundle(&conversation, &options).unwrap();
         let manifest: toml::Value = toml::from_str(&bundle.app_toml).unwrap();
@@ -365,9 +365,9 @@ mod tests {
             manifest["services"]["server"]["ports"][0]["type"].as_str(),
             Some("udp")
         );
-        assert!(bundle.app_toml.contains("EVE_NODE_IDENTITY_JSON"));
+        assert!(bundle.app_toml.contains("COLLOQ_NODE_IDENTITY_JSON"));
         assert!(bundle.app_toml.contains("sensitive = true"));
-        assert!(bundle.app_toml.contains("EVE_ADVERTISE_ADDRESS"));
+        assert!(bundle.app_toml.contains("COLLOQ_ADVERTISE_ADDRESS"));
         assert!(bundle.app_toml.contains("serve-iroh"));
     }
 }

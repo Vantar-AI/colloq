@@ -456,6 +456,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "colloq"
+version = "0.1.0"
+dependencies = [
+ "automerge",
+ "clap",
+ "iroh",
+ "quinn",
+ "rcgen",
+ "rustls",
+ "serde",
+ "serde_json",
+ "sha2",
+ "thiserror 2.0.19",
+ "tokio",
+ "toml",
+ "ureq",
+]
+
+[[package]]
 name = "colorchoice"
 version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -891,25 +910,6 @@ checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
  "windows-sys 0.61.2",
-]
-
-[[package]]
-name = "eve-language"
-version = "0.1.0"
-dependencies = [
- "automerge",
- "clap",
- "iroh",
- "quinn",
- "rcgen",
- "rustls",
- "serde",
- "serde_json",
- "sha2",
- "thiserror 2.0.19",
- "tokio",
- "toml",
- "ureq",
 ]
 
 [[package]]

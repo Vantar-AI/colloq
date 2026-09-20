@@ -72,27 +72,27 @@ jobs:
 
       - name: Validate checked-in examples
         run: |
-          check-jsonschema --schemafile spec/eve-graph-v0.schema.json examples/hello.evegraph.json
-          check-jsonschema --schemafile spec/eve-conversation-v0.schema.json \
-            examples/generate.eveconv.json examples/draft-sync.eveconv.json \
-            examples/route.eveconv.json
-          check-jsonschema --schemafile spec/eve-jev-v0.schema.json \
-            examples/route.evejev.json
-          check-jsonschema --schemafile spec/eve-session-v0.schema.json \
+          check-jsonschema --schemafile spec/colloq-graph-v0.schema.json examples/hello.colloqgraph.json
+          check-jsonschema --schemafile spec/colloq-conversation-v0.schema.json \
+            examples/generate.colloqconv.json examples/draft-sync.colloqconv.json \
+            examples/route.colloqconv.json
+          check-jsonschema --schemafile spec/colloq-jev-v0.schema.json \
+            examples/route.colloqjev.json
+          check-jsonschema --schemafile spec/colloq-session-v0.schema.json \
             examples/session-preface.compact.json
-          check-jsonschema --schemafile spec/eve-evidence-v0.schema.json \
+          check-jsonschema --schemafile spec/colloq-evidence-v0.schema.json \
             benchmarks/evidence-v0-example.json
 
       - name: Validate generated plans and trust artifacts
         run: |
-          cargo run --locked -- compile --out build/generate.eveplan.json
-          check-jsonschema --schemafile spec/eve-plan-v0.schema.json build/generate.eveplan.json
+          cargo run --locked -- compile --out build/generate.colloqplan.json
+          check-jsonschema --schemafile spec/colloq-plan-v0.schema.json build/generate.colloqplan.json
           cargo run --locked -- bootstrap-two-node --out build/two-node
-          check-jsonschema --schemafile spec/eve-node-v0.schema.json \
-            build/two-node/server.evenode.json build/two-node/client.evenode.json
-          check-jsonschema --schemafile spec/eve-authorization-v0.schema.json \
+          check-jsonschema --schemafile spec/colloq-node-v0.schema.json \
+            build/two-node/server.colloqnode.json build/two-node/client.colloqnode.json
+          check-jsonschema --schemafile spec/colloq-authorization-v0.schema.json \
             build/two-node/server.authorization.json build/two-node/client.authorization.json
-          cargo run --locked -- run-plan build/generate.eveplan.json --wire compact --transport memory
+          cargo run --locked -- run-plan build/generate.colloqplan.json --wire compact --transport memory
 
   two-node:
     name: Two-node Iroh smoke (${{ matrix.os }})
@@ -107,7 +107,7 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@stable
 
-      - name: Build Eve
+      - name: Build Colloq
         run: cargo build --locked
 
       - name: Exercise independent authenticated processes

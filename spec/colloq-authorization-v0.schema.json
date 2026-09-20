@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://vantar.xyz/eve/spec/eve-authorization-v0.schema.json",
-  "title": "Eve Endpoint Authorization Policy v0",
-  "description": "A local allow-list binding authenticated endpoint identities to exact Eve roles and plan identities.",
+  "$id": "https://vantar.xyz/colloq/spec/colloq-authorization-v0.schema.json",
+  "title": "Colloq Endpoint Authorization Policy v0",
+  "description": "A local allow-list binding authenticated endpoint identities to exact Colloq roles and plan identities.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["eve_authorization", "rules"],
+  "required": ["colloq_authorization", "rules"],
   "properties": {
-    "eve_authorization": {
+    "colloq_authorization": {
       "const": "0.1.0"
     },
     "rules": {

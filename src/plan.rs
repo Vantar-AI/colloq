@@ -1,4 +1,4 @@
-//! Compiled, reusable execution plans for Eve conversations.
+//! Compiled, reusable execution plans for Colloq conversations.
 
 use crate::{
     Conversation, ENDPOINT_FORMAT, Endpoint, EndpointState, ValidationErrors, project_validated,
@@ -20,7 +20,7 @@ pub enum PlanError {
     InvalidConversation(#[from] ValidationErrors),
     #[error("plan codec error: {0}")]
     Codec(#[from] serde_json::Error),
-    #[error("unsupported Eve Plan version {actual}; expected {expected}")]
+    #[error("unsupported Colloq Plan version {actual}; expected {expected}")]
     Version {
         actual: String,
         expected: &'static str,
@@ -30,7 +30,7 @@ pub enum PlanError {
         declared: String,
         calculated: String,
     },
-    #[error("invalid Eve Plan: {0}")]
+    #[error("invalid Colloq Plan: {0}")]
     Invalid(String),
 }
 
@@ -40,8 +40,8 @@ pub enum PlanError {
 /// identities, and the initial state rather than the complete projected state graph.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct EvePlan {
-    pub eve_plan: String,
+pub struct ColloqPlan {
+    pub colloq_plan: String,
     pub conversation: String,
     pub conversation_identity: String,
     pub plan_identity: String,
@@ -50,7 +50,7 @@ pub struct EvePlan {
     pub wire: Option<CompactWirePlan>,
 }
 
-/// The deterministic transition dictionary used by compact Eve Wire sessions.
+/// The deterministic transition dictionary used by compact Colloq Wire sessions.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct CompactWirePlan {
@@ -95,7 +95,7 @@ pub struct PreparedPlan {
     wire: Arc<CompactWirePlan>,
 }
 
-impl EvePlan {
+impl ColloqPlan {
     pub fn compile(conversation: &Conversation) -> Result<Self, PlanError> {
         validate(conversation)?;
         let conversation_identity = conversation_identity_validated(conversation)?;
@@ -104,7 +104,7 @@ impl EvePlan {
         let endpoints = endpoints.into_iter().map(Arc::new).collect::<Vec<_>>();
         let wire = derive_wire_plan(&endpoints)?;
         let mut plan = Self {
-            eve_plan: PLAN_FORMAT.to_string(),
+            colloq_plan: PLAN_FORMAT.to_string(),
             conversation: conversation.module.id.clone(),
             conversation_identity,
             plan_identity: String::new(),
@@ -118,9 +118,9 @@ impl EvePlan {
 
     /// Verify a deserialized plan once before using it to create cheap sessions.
     pub fn verify(&self) -> Result<(), PlanError> {
-        if self.eve_plan != PLAN_FORMAT {
+        if self.colloq_plan != PLAN_FORMAT {
             return Err(PlanError::Version {
-                actual: self.eve_plan.clone(),
+                actual: self.colloq_plan.clone(),
                 expected: PLAN_FORMAT,
             });
         }
@@ -131,7 +131,7 @@ impl EvePlan {
         }
         if self.endpoints.len() != 2 {
             return Err(PlanError::Invalid(
-                "Eve Plan v0 requires exactly two endpoints".to_string(),
+                "Colloq Plan v0 requires exactly two endpoints".to_string(),
             ));
         }
 
@@ -192,7 +192,7 @@ impl EvePlan {
     fn calculate_identity(&self) -> Result<String, PlanError> {
         #[derive(Serialize)]
         struct SemanticPlan<'a> {
-            eve_plan: &'a str,
+            colloq_plan: &'a str,
             conversation: &'a str,
             conversation_identity: &'a str,
             endpoints: &'a [Arc<Endpoint>],
@@ -201,7 +201,7 @@ impl EvePlan {
         }
 
         let encoded = serde_json::to_vec(&SemanticPlan {
-            eve_plan: &self.eve_plan,
+            colloq_plan: &self.colloq_plan,
             conversation: &self.conversation,
             conversation_identity: &self.conversation_identity,
             endpoints: &self.endpoints,
@@ -213,7 +213,7 @@ impl EvePlan {
 
 impl PreparedPlan {
     pub fn compile(conversation: &Conversation) -> Result<Self, PlanError> {
-        EvePlan::compile(conversation)?.prepared()
+        ColloqPlan::compile(conversation)?.prepared()
     }
 
     pub fn conversation(&self) -> &str {
@@ -358,10 +358,10 @@ fn verify_endpoint(
     conversation: &str,
     roles: &BTreeSet<&str>,
 ) -> Result<(), PlanError> {
-    if endpoint.eve_endpoint != ENDPOINT_FORMAT {
+    if endpoint.colloq_endpoint != ENDPOINT_FORMAT {
         return Err(PlanError::Invalid(format!(
             "endpoint {} uses unsupported format {}",
-            endpoint.role, endpoint.eve_endpoint
+            endpoint.role, endpoint.colloq_endpoint
         )));
     }
     if !valid_id(&endpoint.role) || !valid_id(&endpoint.initial) {
@@ -513,14 +513,14 @@ mod tests {
     use super::*;
 
     fn conversation() -> Conversation {
-        serde_json::from_str(include_str!("../examples/generate.eveconv.json")).unwrap()
+        serde_json::from_str(include_str!("../examples/generate.colloqconv.json")).unwrap()
     }
 
     #[test]
     fn compiled_plan_round_trips_and_verifies() {
-        let plan = EvePlan::compile(&conversation()).unwrap();
+        let plan = ColloqPlan::compile(&conversation()).unwrap();
         let encoded = serde_json::to_vec(&plan).unwrap();
-        let decoded: EvePlan = serde_json::from_slice(&encoded).unwrap();
+        let decoded: ColloqPlan = serde_json::from_slice(&encoded).unwrap();
         decoded.verify().unwrap();
         let prepared = decoded.prepare().unwrap();
         assert_eq!(decoded.plan_identity, plan.plan_identity);
@@ -531,7 +531,7 @@ mod tests {
 
     #[test]
     fn plan_identity_rejects_tampering() {
-        let mut plan = EvePlan::compile(&conversation()).unwrap();
+        let mut plan = ColloqPlan::compile(&conversation()).unwrap();
         Arc::make_mut(&mut plan.endpoints[0]).initial = "end".to_string();
         let error = plan.verify().unwrap_err();
         assert!(matches!(error, PlanError::IdentityMismatch { .. }));
@@ -547,15 +547,15 @@ mod tests {
             serde_json::Value::String("human".to_string()),
         );
         assert_eq!(
-            EvePlan::compile(&original).unwrap().plan_identity,
-            EvePlan::compile(&edited).unwrap().plan_identity
+            ColloqPlan::compile(&original).unwrap().plan_identity,
+            ColloqPlan::compile(&edited).unwrap().plan_identity
         );
     }
 
     #[test]
     fn compact_transition_ids_are_deterministic_and_dense() {
-        let first = EvePlan::compile(&conversation()).unwrap();
-        let second = EvePlan::compile(&conversation()).unwrap();
+        let first = ColloqPlan::compile(&conversation()).unwrap();
+        let second = ColloqPlan::compile(&conversation()).unwrap();
         let first_wire = first.wire.as_ref().unwrap();
         assert_eq!(first_wire, second.wire.as_ref().unwrap());
         assert_eq!(first_wire.encoding, COMPACT_WIRE_FORMAT);
@@ -572,7 +572,7 @@ mod tests {
 
     #[test]
     fn prepared_legacy_plan_derives_the_compact_dictionary() {
-        let mut legacy = EvePlan::compile(&conversation()).unwrap();
+        let mut legacy = ColloqPlan::compile(&conversation()).unwrap();
         legacy.wire = None;
         legacy.plan_identity = legacy.calculate_identity().unwrap();
         legacy.verify().unwrap();
@@ -583,7 +583,7 @@ mod tests {
 
     #[test]
     fn compact_dictionary_rejects_a_recalculated_noncanonical_table() {
-        let mut plan = EvePlan::compile(&conversation()).unwrap();
+        let mut plan = ColloqPlan::compile(&conversation()).unwrap();
         plan.wire.as_mut().unwrap().transitions.swap(0, 1);
         plan.plan_identity = plan.calculate_identity().unwrap();
         let error = plan.verify().unwrap_err();

@@ -1,9 +1,9 @@
-//! Collaborative draft storage with an explicit promotion gate into executable Eve semantics.
+//! Collaborative draft storage with an explicit promotion gate into executable Colloq semantics.
 //!
-//! Automerge owns draft history and merging. Eve remains the authority for conflicts,
+//! Automerge owns draft history and merging. Colloq remains the authority for conflicts,
 //! validation, canonical semantic identity, and executable-plan construction.
 
-use crate::plan::{EvePlan, PlanError};
+use crate::plan::{ColloqPlan, PlanError};
 use crate::{Conversation, ValidationErrors, validate};
 use automerge::hydrate::{Map as HydrateMap, Value as HydrateValue};
 use automerge::sync::{self, SyncDoc};
@@ -55,15 +55,15 @@ pub struct DraftConflict {
     pub competing_values: usize,
 }
 
-/// The only form of an Automerge draft that may enter the Eve compiler.
+/// The only form of an Automerge draft that may enter the Colloq compiler.
 #[derive(Debug)]
 pub struct PromotedDraft {
     pub conversation: Conversation,
     pub conversation_identity: String,
-    pub plan: EvePlan,
+    pub plan: ColloqPlan,
 }
 
-/// A collaborative draft. Its history is intentionally distinct from Eve content identity.
+/// A collaborative draft. Its history is intentionally distinct from Colloq content identity.
 pub struct AutomergeDraft {
     document: AutoCommit,
 }
@@ -85,7 +85,7 @@ impl AutomergeDraft {
     pub fn from_conversation(conversation: &Conversation) -> Result<Self, DraftError> {
         let value = serde_json::to_value(conversation)?;
         let Value::Object(root) = value else {
-            unreachable!("an Eve conversation serializes as a JSON object");
+            unreachable!("an Colloq conversation serializes as a JSON object");
         };
         let root = HydrateMap::from(
             root.into_iter()
@@ -184,7 +184,7 @@ impl AutomergeDraft {
             ObjType::Text => {
                 return Err(invalid_pointer(
                     &patch.path,
-                    "text objects are not valid Eve graph containers",
+                    "text objects are not valid Colloq graph containers",
                 ));
             }
         }
@@ -197,7 +197,7 @@ impl AutomergeDraft {
         Ok(conflicts)
     }
 
-    /// Reject conflicts, deserialize with Eve's strict schema, validate, and compile.
+    /// Reject conflicts, deserialize with Colloq's strict schema, validate, and compile.
     pub fn promote(&self) -> Result<PromotedDraft, DraftError> {
         let conflicts = self.conflicts()?;
         if !conflicts.is_empty() {
@@ -210,7 +210,7 @@ impl AutomergeDraft {
         }
         let conversation: Conversation = serde_json::from_value(self.materialize()?)?;
         validate(&conversation)?;
-        let plan = EvePlan::compile(&conversation)?;
+        let plan = ColloqPlan::compile(&conversation)?;
         Ok(PromotedDraft {
             conversation,
             conversation_identity: plan.conversation_identity.clone(),
@@ -313,7 +313,7 @@ fn child_object(
         ObjType::Text => {
             return Err(invalid_pointer(
                 path,
-                "text objects are not valid Eve graph containers",
+                "text objects are not valid Colloq graph containers",
             ));
         }
     };
@@ -397,7 +397,7 @@ mod tests {
     use super::*;
 
     fn conversation() -> Conversation {
-        serde_json::from_str(include_str!("../examples/generate.eveconv.json")).unwrap()
+        serde_json::from_str(include_str!("../examples/generate.colloqconv.json")).unwrap()
     }
 
     #[test]

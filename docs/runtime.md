@@ -1,29 +1,29 @@
 # Runtime experiment
 
-The first Eve runtime tests one claim: a global conversation can remain semantically identical while its projected endpoints execute through different transport plans.
+The first Colloq runtime tests one claim: a global conversation can remain semantically identical while its projected endpoints execute through different transport plans.
 
 It is deliberately a reference implementation rather than a performance architecture.
 
 ## Execution model
 
-The runtime compiles a Conversation v0 graph into one verified Eve Plan containing both projected endpoints. Each role creates a lightweight session over its shared immutable endpoint graph. No central coordinator advances the conversation.
+The runtime compiles a Conversation v0 graph into one verified Colloq Plan containing both projected endpoints. Each role creates a lightweight session over its shared immutable endpoint graph. No central coordinator advances the conversation.
 
-`demo` compiles once before starting either role. `compile` and `run-plan` make that boundary explicit and reusable across executions; see [Eve Plan v0](plan.md).
+`demo` compiles once before starting either role. `compile` and `run-plan` make that boundary explicit and reusable across executions; see [Colloq Plan v0](plan.md).
 
 For every transition, the sending endpoint:
 
 1. Checks that its projected state permits the action.
-2. Creates a versioned Eve Wire envelope.
+2. Creates a versioned Colloq Wire envelope.
 3. Records the conversation name, experimental semantic hash, state, and sequence.
 4. Advances only its local endpoint machine.
 
 The receiving endpoint independently checks all envelope fields and the permitted receive action before advancing. It rejects stale, reordered, graph-incompatible, or protocol-invalid frames.
 
-Reference mode serializes that complete semantic envelope. Compact mode resolves the checked frame through the plan's deterministic transition dictionary and sends `{t, q, p?}`: transition ID, sequence, and optional data payload. The receiver reconstructs the complete envelope from its verified plan before running the same checks. See [Eve Wire v0](wire.md).
+Reference mode serializes that complete semantic envelope. Compact mode resolves the checked frame through the plan's deterministic transition dictionary and sends `{t, q, p?}`: transition ID, sequence, and optional data payload. The receiver reconstructs the complete envelope from its verified plan before running the same checks. See [Colloq Wire v0](wire.md).
 
-Before TCP, QUIC, or Iroh frame zero, both roles exchange an Eve Session Preface containing session version, conversation and plan identity, role, and exact encoding. Either side aborts on any mismatch; network transports refuse frame I/O until the preface succeeds. Iroh sessions additionally bind the authenticated endpoint IDs and a TLS exporter from the concrete connection.
+Before TCP, QUIC, or Iroh frame zero, both roles exchange an Colloq Session Preface containing session version, conversation and plan identity, role, and exact encoding. Either side aborts on any mismatch; network transports refuse frame I/O until the preface succeeds. Iroh sessions additionally bind the authenticated endpoint IDs and a TLS exporter from the concrete connection.
 
-The SHA-256 value is an experimental semantic identity. It excludes the schema path and annotations, but it is not yet an Eve `ContentId`; canonicalization fixtures and normalization rules must exist before that name is justified.
+The SHA-256 value is an experimental semantic identity. It excludes the schema path and annotations, but it is not yet an Colloq `ContentId`; canonicalization fixtures and normalization rules must exist before that name is justified.
 
 ## Transport plans
 
@@ -70,26 +70,26 @@ Separate processes use the public certificate as their explicit trust handoff:
 ```bash
 # Process 1
 cargo run -- serve-quic --listen 127.0.0.1:7879 \
-  --wire compact --certificate-out build/eve-quic-cert.der --tokens 4
+  --wire compact --certificate-out build/colloq-quic-cert.der --tokens 4
 
 # Process 2
 cargo run -- connect-quic --server 127.0.0.1:7879 \
-  --wire compact --certificate build/eve-quic-cert.der --cancel-after 2
+  --wire compact --certificate build/colloq-quic-cert.der --cancel-after 2
 ```
 
 The generated private key remains in the server process. The client pins that server certificate, then verifies the session preface inside the authenticated TLS channel. This binds the server's declared plan, role, and encoding to the pinned key. The public certificate is regenerated for each server invocation; persistent identity, client authentication, authorization, and certificate rotation are intentionally deferred.
 
-After the Eve conversation reaches `end`, the QUIC plan performs a role-ordered close handshake outside the semantic trace. This ensures each process observes the peer's completion before either endpoint releases its QUIC connection.
+After the Colloq conversation reaches `end`, the QUIC plan performs a role-ordered close handshake outside the semantic trace. This ensures each process observes the peer's completion before either endpoint releases its QUIC connection.
 
 ### Iroh
 
 The Iroh plan carries the same reference or compact envelope over a bidirectional QUIC stream with
-ALPN `eve/0.1`. Each node is created from a persistent Ed25519 secret key, and the caller supplies
-the exact remote Endpoint ID it expects. A different peer is rejected before Eve session setup.
+ALPN `colloq/0.1`. Each node is created from a persistent Ed25519 secret key, and the caller supplies
+the exact remote Endpoint ID it expects. A different peer is rejected before Colloq session setup.
 
 ```bash
 cargo run -- demo --transport iroh --tokens 3
-cargo run -- run-plan build/generate.eveplan.json \
+cargo run -- run-plan build/generate.colloqplan.json \
   --transport iroh --wire compact --tokens 3
 ```
 
@@ -99,7 +99,7 @@ endpoint. During session setup, each peer checks that the preface's endpoint ide
 key authenticated by Iroh and that its `channel_binding` matches a TLS exporter derived with the
 plan identity. A copied preface therefore cannot authenticate a different connection.
 
-Persistent `*.evenode.json` files keep the private key local, public `*.eveendpoint.json` tickets
+Persistent `*.colloqnode.json` files keep the private key local, public `*.colloqendpoint.json` tickets
 carry direct addresses, and `*.authorization.json` policies map authenticated peer IDs to exact
 roles and plan identities. `serve-iroh` and `connect-iroh` run the endpoints as independent
 processes; `verify-session` compares their saved reports. A plan change is fail-closed until each
@@ -130,7 +130,7 @@ This does not solve distributed agreement. The deterministic memory injector ass
 
 ## Reference benchmark
 
-The `benchmark` command compares the whole Eve memory path with a hand-written request/token/done protocol using the same basic threads, channels, and JSON boundary. It currently exposes rather than hides the cost of the reference machinery:
+The `benchmark` command compares the whole Colloq memory path with a hand-written request/token/done protocol using the same basic threads, channels, and JSON boundary. It currently exposes rather than hides the cost of the reference machinery:
 
 ```bash
 cargo run --release --locked -- benchmark \
@@ -167,17 +167,17 @@ It does not yet provide:
 - asynchronous multiplexing or flow control;
 - retries, reconnects, recovery branches, or distributed failure agreement;
 - enforcement of declared deadlines;
-- structural validation of payloads from Eve type definitions;
+- structural validation of payloads from Colloq type definitions;
 - canonical graph normalization;
 - bulk tensor transfer or zero-copy buffers;
 - replay-resistant session nonces, resumption, or persistent connection pooling;
 - a binary payload codec or zero-copy performance architecture.
 
-The TCP server listens on loopback by default because that wire plan is plaintext and unauthenticated. QUIC is encrypted, but its generated certificate is suitable only for this explicit pinning experiment. Iroh authenticates both endpoint keys; the local Eve authorization policy controls admission and roles.
+The TCP server listens on loopback by default because that wire plan is plaintext and unauthenticated. QUIC is encrypted, but its generated certificate is suitable only for this explicit pinning experiment. Iroh authenticates both endpoint keys; the local Colloq authorization policy controls admission and roles.
 
 ## Current result and next experiment
 
-Memory, TCP, QUIC, and Iroh preserve the same successful semantic trace across reference and compact encodings. Independent TCP, QUIC, and Iroh processes exchange the compact representation after a strict plan-bound preface. QUIC authenticates the server and binds its declared plan to the pinned TLS connection; Iroh authenticates both persistent endpoint keys, applies exact role/plan authorization, and binds the session to its concrete TLS connection. Conversations compile into reusable, identified endpoint plans with deterministic transition dictionaries. Incremental Automerge synchronization also runs as a projected Eve conversation over authenticated Iroh. Compact encoding improved the checked-transition median by 1.32× and the complete warm exchange by 1.11×, but remains 1.51× the hand-written baseline. Deterministic failures preserve different local timeout and uncertainty observations.
+Memory, TCP, QUIC, and Iroh preserve the same successful semantic trace across reference and compact encodings. Independent TCP, QUIC, and Iroh processes exchange the compact representation after a strict plan-bound preface. QUIC authenticates the server and binds its declared plan to the pinned TLS connection; Iroh authenticates both persistent endpoint keys, applies exact role/plan authorization, and binds the session to its concrete TLS connection. Conversations compile into reusable, identified endpoint plans with deterministic transition dictionaries. Incremental Automerge synchronization also runs as a projected Colloq conversation over authenticated Iroh. Compact encoding improved the checked-transition median by 1.32× and the complete warm exchange by 1.11×, but remains 1.51× the hand-written baseline. Deterministic failures preserve different local timeout and uncertainty observations.
 
 The next runtime experiment should:
 

@@ -1,21 +1,21 @@
-# Eve Plan v0
+# Colloq Plan v0
 
-Eve Plan v0 moves validation and endpoint projection out of the per-session execution path.
+Colloq Plan v0 moves validation and endpoint projection out of the per-session execution path.
 
-A conversation remains the semantic source of truth. `eve compile` validates that global graph, calculates its experimental semantic identity, projects one endpoint machine per role, sorts those endpoints deterministically, and writes a reusable plan artifact:
+A conversation remains the semantic source of truth. `colloq compile` validates that global graph, calculates its experimental semantic identity, projects one endpoint machine per role, sorts those endpoints deterministically, and writes a reusable plan artifact:
 
 ```bash
-cargo run -- compile examples/generate.eveconv.json \
-  --out build/generate.eveplan.json
+cargo run -- compile examples/generate.colloqconv.json \
+  --out build/generate.colloqplan.json
 ```
 
-The JSON representation is a debugging and interchange form governed by [`eve-plan-v0.schema.json`](../spec/eve-plan-v0.schema.json). It is not an optimized wire encoding.
+The JSON representation is a debugging and interchange form governed by [`colloq-plan-v0.schema.json`](../spec/colloq-plan-v0.schema.json). It is not an optimized wire encoding.
 
 ## Plan contents
 
-An Eve Plan contains:
+An Colloq Plan contains:
 
-- the Eve Plan format version;
+- the Colloq Plan format version;
 - the conversation name and experimental semantic identity;
 - a deterministic plan identity;
 - one immutable projected endpoint graph per role, including typed failure edges;
@@ -32,22 +32,22 @@ For compatibility with plans produced before the dictionary existed, `wire` is o
 Run a compiled artifact without revalidating or re-projecting the conversation:
 
 ```bash
-cargo run -- run-plan build/generate.eveplan.json \
+cargo run -- run-plan build/generate.colloqplan.json \
   --transport memory --tokens 3
 ```
 
 TCP, QUIC, and Iroh use the same plan:
 
 ```bash
-cargo run -- run-plan build/generate.eveplan.json --transport tcp
-cargo run -- run-plan build/generate.eveplan.json --transport quic
-cargo run -- run-plan build/generate.eveplan.json --transport iroh
+cargo run -- run-plan build/generate.colloqplan.json --transport tcp
+cargo run -- run-plan build/generate.colloqplan.json --transport quic
+cargo run -- run-plan build/generate.colloqplan.json --transport iroh
 ```
 
 Select the plan-backed compact encoding without changing the conversation:
 
 ```bash
-cargo run -- run-plan build/generate.eveplan.json \
+cargo run -- run-plan build/generate.colloqplan.json \
   --wire compact --transport quic
 ```
 
@@ -63,7 +63,7 @@ The distinction matters:
 
 The dictionary deduplicates matching endpoint actions, sorts them deterministically by state and semantic operation, and assigns dense `u16` IDs starting at one. The sender maps an already checked semantic frame to an ID. The receiver resolves that ID, reconstructs the full semantic frame, and runs the unchanged endpoint checks. Reference and compact sessions must produce identical semantic traces.
 
-Compact mode requires both endpoints to possess the same plan. Before TCP, QUIC, or Iroh frame zero, a versioned session preface checks the conversation identity, plan identity, peer role, and exact encoding with no downgrade fallback. QUIC carries that binding inside its server-authenticated TLS connection; Iroh binds it to both authenticated endpoint identities and the concrete TLS connection; TCP performs only unauthenticated equality checks. See [Eve Wire v0](wire.md) for the exact envelope and trust boundary.
+Compact mode requires both endpoints to possess the same plan. Before TCP, QUIC, or Iroh frame zero, a versioned session preface checks the conversation identity, plan identity, peer role, and exact encoding with no downgrade fallback. QUIC carries that binding inside its server-authenticated TLS connection; Iroh binds it to both authenticated endpoint identities and the concrete TLS connection; TCP performs only unauthenticated equality checks. See [Colloq Wire v0](wire.md) for the exact envelope and trust boundary.
 
 ## Measured boundary
 
