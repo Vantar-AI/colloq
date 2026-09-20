@@ -1,15 +1,15 @@
-# Eve Wire v0
+# Colloq Wire v0
 
-Eve Wire carries conversation transitions between plan-backed endpoint machines. The runtime now has two encodings with identical semantics:
+Colloq Wire carries conversation transitions between plan-backed endpoint machines. The runtime now has two encodings with identical semantics:
 
 - `reference` sends a self-describing envelope containing the wire version, conversation, semantic identity, state, sequence, and complete frame;
 - `compact` sends only a compiled transition ID, sequence, and optional data payload.
 
-Use the compact path with a verified Eve Plan:
+Use the compact path with a verified Colloq Plan:
 
 ```bash
-cargo run -- compile examples/generate.eveconv.json
-cargo run -- run-plan build/generate.eveplan.json \
+cargo run -- compile examples/generate.colloqconv.json
+cargo run -- run-plan build/generate.colloqplan.json \
   --wire compact --transport quic --tokens 3
 ```
 
@@ -32,7 +32,7 @@ For the example conversation, transition `7` means:
 }
 ```
 
-The reference envelope repeats those semantics on every prompt. Compact Eve Wire sends:
+The reference envelope repeats those semantics on every prompt. Compact Colloq Wire sends:
 
 ```json
 {"t":7,"q":0,"p":{"text":"hello"}}
@@ -48,7 +48,7 @@ TCP, QUIC, and Iroh exchange a versioned session preface before frame zero. Each
 
 ```json
 {
-  "eve_session": "0.1.0",
+  "colloq_session": "0.1.0",
   "conversation": "example.generate",
   "conversation_identity": "sha256:…",
   "plan_identity": "sha256:…",
@@ -61,28 +61,28 @@ Both peers send before receiving, then independently require exact agreement on 
 
 The schema also permits optional `endpoint_identity` and `channel_binding` evidence. Iroh requires
 both fields. The endpoint identity must equal the remote key authenticated by Iroh, and the channel
-binding must equal a TLS exporter derived from the concrete connection with the Eve plan identity
+binding must equal a TLS exporter derived from the concrete connection with the Colloq plan identity
 as context. Existing TCP and standalone QUIC sessions omit them.
 
-The base example preface is 278 bytes plus a four-byte length prefix and one status byte in each direction. Iroh prefaces are larger because they carry the two connection bindings. The two phases add one application-level validation round trip before the conversation. It is governed by [`eve-session-v0.schema.json`](../spec/eve-session-v0.schema.json).
+The base example preface is 281 bytes plus a four-byte length prefix and one status byte in each direction. Iroh prefaces are larger because they carry the two connection bindings. The two phases add one application-level validation round trip before the conversation. It is governed by [`colloq-session-v0.schema.json`](../spec/colloq-session-v0.schema.json).
 
 Independent processes can now use the compact path directly:
 
 ```bash
 # Server
 cargo run -- serve-quic --wire compact \
-  --certificate-out build/eve-quic-cert.der
+  --certificate-out build/colloq-quic-cert.der
 
 # Client
 cargo run -- connect-quic --wire compact \
-  --certificate build/eve-quic-cert.der
+  --certificate build/colloq-quic-cert.der
 ```
 
 ## Authentication boundary
 
 On QUIC, the client pins the server certificate before the preface travels inside the authenticated TLS channel. That binds the server's declared role, plan, and encoding to the pinned server key and prevents an on-path downgrade. The v0 QUIC server does not authenticate the client; any client that can reach it may claim the expected public plan and role. Mutual TLS, authorization, per-session nonces, and replay-resistant application proofs remain open.
 
-On Iroh, both peers authenticate the expected persistent Endpoint ID before the bidirectional Eve
+On Iroh, both peers authenticate the expected persistent Endpoint ID before the bidirectional Colloq
 stream is accepted. The exporter binds the preface to that connection. This is mutual
 authentication, but authorization remains separate: the caller still needs a policy deciding
 which key may run which role and plan. Key provisioning, rotation, revocation, and

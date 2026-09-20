@@ -1,14 +1,14 @@
 # Illustrative text projection
 
-This file demonstrates one possible textual view of Eve. It is not the language's source of truth, a grammar, or a compatibility promise.
+This file demonstrates one possible textual view of Colloq. It is not the language's source of truth, a grammar, or a compatibility promise.
 
-The authoritative program is the canonical Eve Graph described by [RFC-0001](../rfcs/0001-eve-language-kernel.md). Parsing text proposes a graph transaction; printing a graph produces canonical text. Structural AI tools may edit the graph without passing through text at all.
+The authoritative program is the canonical Colloq Graph described by [RFC-0001](../rfcs/0001-colloq-kernel.md). Parsing text proposes a graph transaction; printing a graph produces canonical text. Structural AI tools may edit the graph without passing through text at all.
 
 Its primary executable form is a global conversation described by [RFC-0002](../rfcs/0002-conversation-is-the-computation.md), which the compiler projects into one endpoint machine per role.
 
 ## A server conversation
 
-```eve
+```colloq
 conversation Generate(prompt: Prompt) -> stream<Token> {
     roles client, router, expert[*]
 
@@ -28,7 +28,7 @@ This is one program, not three independently authored services. Endpoint project
 
 ## A minimal flow
 
-```eve
+```colloq
 type Prompt {
     id: u128
     tokens: Tensor<u32>[n]
@@ -63,7 +63,7 @@ The program declares logical nodes and stream constraints. It does not hard-code
 
 ## Stateful cells
 
-```eve
+```colloq
 cell Router(state: RouteTable) {
     receive request: Request {
         let target = state.choose(request.kind)
@@ -81,7 +81,7 @@ A cell processes one state transition atomically unless a declaration opts into 
 
 ## Placement
 
-```eve
+```colloq
 place Router {
     replicas 3..8
     within region("eu-west")
@@ -94,7 +94,7 @@ Placement is constraint-based. A program may specify an exact device only when i
 
 ## Tensor-aware communication
 
-```eve
+```colloq
 stream activations: Tensor<bf16>[batch, sequence, hidden]
     from encoder[*] to decoder[*] {
         shard by batch
@@ -108,7 +108,7 @@ stream activations: Tensor<bf16>[batch, sequence, hidden]
 
 ## Explicit remote failure
 
-```eve
+```colloq
 fn score(candidate: Candidate) -> Result<Score, unavailable | timeout>
     remote
     deadline 2s
@@ -119,7 +119,7 @@ Retries require an idempotent operation or an explicit deduplication key. The co
 
 ## Capabilities
 
-```eve
+```colloq
 capability evaluation_data: read Dataset<Evaluation>
 capability candidate_output: append CandidateLog
 
@@ -135,7 +135,7 @@ Capabilities are unforgeable runtime handles represented statically in the check
 
 ## Evolution
 
-```eve
+```colloq
 population policy: Model<Policy> {
     parent stable:v42
     variants 16
@@ -165,13 +165,13 @@ Mutation does not bypass normal compilation, capability checking, or deployment 
 The compiler should expose:
 
 ```text
-eve format --canonical program.eve
-eve check --diagnostic-format json program.eve
-eve ir emit --version 0 program.eve
-eve plan --inventory cluster.json program.eve
-eve simulate --fail node=model-2 program.eve
-eve graph query --cell model --include effects,capabilities program.evegraph
-eve graph apply --base <content-id> patch.evepatch
+colloq format --canonical program.colloq
+colloq check --diagnostic-format json program.colloq
+colloq ir emit --version 0 program.colloq
+colloq plan --inventory cluster.json program.colloq
+colloq simulate --fail node=model-2 program.colloq
+colloq graph query --cell model --include effects,capabilities program.colloqgraph
+colloq graph apply --base <content-id> patch.colloqpatch
 ```
 
 Exact commands will be chosen when a prototype exists. The important property is that formatting, diagnostics, IR production, and failure simulation are deterministic APIs rather than editor-only conveniences.

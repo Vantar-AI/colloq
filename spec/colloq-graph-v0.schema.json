@@ -1,12 +1,12 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://vantar.xyz/eve/spec/eve-graph-v0.schema.json",
-  "title": "Eve Graph v0 experimental interchange",
-  "description": "An unstable interchange format for the graph-native Eve language kernel.",
+  "$id": "https://vantar.xyz/colloq/spec/colloq-graph-v0.schema.json",
+  "title": "Colloq Graph v0 experimental interchange",
+  "description": "An unstable interchange format for the graph-native Colloq language kernel.",
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "eve_graph",
+    "colloq_graph",
     "module",
     "definitions",
     "entrypoints"
@@ -16,7 +16,7 @@
       "type": "string",
       "format": "uri-reference"
     },
-    "eve_graph": {
+    "colloq_graph": {
       "const": "0.1.0"
     },
     "module": {
@@ -965,7 +965,7 @@
         },
         "deployable": {
           "type": "boolean",
-          "description": "Derived hint only; the Eve checker is authoritative."
+          "description": "Derived hint only; the Colloq checker is authoritative."
         }
       }
     }

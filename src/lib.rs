@@ -21,7 +21,7 @@ pub const ENDPOINT_FORMAT: &str = "0.1.0";
 pub struct Conversation {
     #[serde(rename = "$schema", default)]
     pub schema: Option<String>,
-    pub eve_conversation: String,
+    pub colloq_conversation: String,
     pub module: Module,
     pub roles: Vec<Role>,
     pub types: Vec<TypeDefinition>,
@@ -203,13 +203,13 @@ impl std::error::Error for ValidationErrors {}
 pub fn validate(conversation: &Conversation) -> Result<(), ValidationErrors> {
     let mut diagnostics = Vec::new();
 
-    if conversation.eve_conversation != CONVERSATION_FORMAT {
+    if conversation.colloq_conversation != CONVERSATION_FORMAT {
         diagnostics.push(Diagnostic {
-            code: "EVE0001",
-            path: "$.eve_conversation".to_string(),
+            code: "CLQ0001",
+            path: "$.colloq_conversation".to_string(),
             message: format!(
                 "unsupported format {}; expected {CONVERSATION_FORMAT}",
-                conversation.eve_conversation
+                conversation.colloq_conversation
             ),
         });
     }
@@ -222,9 +222,9 @@ pub fn validate(conversation: &Conversation) -> Result<(), ValidationErrors> {
     );
     if conversation.roles.len() != 2 {
         diagnostics.push(Diagnostic {
-            code: "EVE0002",
+            code: "CLQ0002",
             path: "$.roles".to_string(),
-            message: "Eve Conversation v0 endpoint projection requires exactly two roles"
+            message: "Colloq Conversation v0 endpoint projection requires exactly two roles"
                 .to_string(),
         });
     }
@@ -238,7 +238,7 @@ pub fn validate(conversation: &Conversation) -> Result<(), ValidationErrors> {
     for (index, item) in conversation.types.iter().enumerate() {
         if !item.definition.contains_key("kind") {
             diagnostics.push(Diagnostic {
-                code: "EVE0003",
+                code: "CLQ0003",
                 path: format!("$.types[{index}]"),
                 message: format!("type {} is missing its kind", item.id),
             });
@@ -256,7 +256,7 @@ pub fn validate(conversation: &Conversation) -> Result<(), ValidationErrors> {
     for (index, state) in conversation.states.iter().enumerate() {
         if states.insert(state.id(), state).is_some() {
             diagnostics.push(Diagnostic {
-                code: "EVE0004",
+                code: "CLQ0004",
                 path: format!("$.states[{index}].id"),
                 message: format!("duplicate state id {}", state.id()),
             });
@@ -265,7 +265,7 @@ pub fn validate(conversation: &Conversation) -> Result<(), ValidationErrors> {
 
     if !states.contains_key(conversation.initial.as_str()) {
         diagnostics.push(Diagnostic {
-            code: "EVE0005",
+            code: "CLQ0005",
             path: "$.initial".to_string(),
             message: format!("initial state {} does not exist", conversation.initial),
         });
@@ -284,7 +284,7 @@ pub fn validate(conversation: &Conversation) -> Result<(), ValidationErrors> {
                 validate_roles(index, from, to, &role_ids, &mut diagnostics);
                 if !type_ids.contains(message) {
                     diagnostics.push(Diagnostic {
-                        code: "EVE0006",
+                        code: "CLQ0006",
                         path: format!("$.states[{index}].message"),
                         message: format!("unknown message type {message}"),
                     });
@@ -300,14 +300,14 @@ pub fn validate(conversation: &Conversation) -> Result<(), ValidationErrors> {
             } => {
                 if !role_ids.contains(chooser) {
                     diagnostics.push(Diagnostic {
-                        code: "EVE0007",
+                        code: "CLQ0007",
                         path: format!("$.states[{index}].chooser"),
                         message: format!("unknown chooser role {chooser}"),
                     });
                 }
                 if branches.len() < 2 {
                     diagnostics.push(Diagnostic {
-                        code: "EVE0008",
+                        code: "CLQ0008",
                         path: format!("$.states[{index}].branches"),
                         message: "a choice requires at least two branches".to_string(),
                     });
@@ -315,7 +315,7 @@ pub fn validate(conversation: &Conversation) -> Result<(), ValidationErrors> {
                 for (label, target) in branches {
                     if label.is_empty() {
                         diagnostics.push(Diagnostic {
-                            code: "EVE0009",
+                            code: "CLQ0009",
                             path: format!("$.states[{index}].branches"),
                             message: "branch labels cannot be empty".to_string(),
                         });
@@ -335,7 +335,7 @@ pub fn validate(conversation: &Conversation) -> Result<(), ValidationErrors> {
                 validate_roles(index, from, to, &role_ids, &mut diagnostics);
                 if scope.is_empty() {
                     diagnostics.push(Diagnostic {
-                        code: "EVE0010",
+                        code: "CLQ0010",
                         path: format!("$.states[{index}].scope"),
                         message: "cancellation scope cannot be empty".to_string(),
                     });
@@ -346,7 +346,7 @@ pub fn validate(conversation: &Conversation) -> Result<(), ValidationErrors> {
             GlobalState::Fail { failure, .. } => {
                 if !failure_ids.contains(failure) {
                     diagnostics.push(Diagnostic {
-                        code: "EVE0019",
+                        code: "CLQ0019",
                         path: format!("$.states[{index}].failure"),
                         message: format!("unknown failure type {failure}"),
                     });
@@ -377,13 +377,13 @@ fn unique_ids<'a>(
     for (index, id) in ids.enumerate() {
         if id.is_empty() {
             diagnostics.push(Diagnostic {
-                code: "EVE0011",
+                code: "CLQ0011",
                 path: format!("{path}[{index}].id"),
                 message: format!("{kind} id cannot be empty"),
             });
         } else if !seen.insert(id.to_string()) {
             diagnostics.push(Diagnostic {
-                code: "EVE0012",
+                code: "CLQ0012",
                 path: format!("{path}[{index}].id"),
                 message: format!("duplicate {kind} id {id}"),
             });
@@ -401,21 +401,21 @@ fn validate_roles(
 ) {
     if !roles.contains(from) {
         diagnostics.push(Diagnostic {
-            code: "EVE0013",
+            code: "CLQ0013",
             path: format!("$.states[{index}].from"),
             message: format!("unknown sender role {from}"),
         });
     }
     if !roles.contains(to) {
         diagnostics.push(Diagnostic {
-            code: "EVE0014",
+            code: "CLQ0014",
             path: format!("$.states[{index}].to"),
             message: format!("unknown receiver role {to}"),
         });
     }
     if from == to {
         diagnostics.push(Diagnostic {
-            code: "EVE0015",
+            code: "CLQ0015",
             path: format!("$.states[{index}]"),
             message: "sender and receiver must be different roles".to_string(),
         });
@@ -431,7 +431,7 @@ fn validate_target(
 ) {
     if !states.contains_key(target) {
         diagnostics.push(Diagnostic {
-            code: "EVE0016",
+            code: "CLQ0016",
             path: format!("$.states[{index}].{edge}"),
             message: format!("target state {target} does not exist"),
         });
@@ -448,7 +448,7 @@ fn validate_failure_edges(
     for (failure, target) in on_failure {
         if !failures.contains(failure) {
             diagnostics.push(Diagnostic {
-                code: "EVE0019",
+                code: "CLQ0019",
                 path: format!("$.states[{index}].on_failure.{failure}"),
                 message: format!("unknown failure type {failure}"),
             });
@@ -467,7 +467,7 @@ fn validate_failure_edges(
                     ..
                 } if terminal_failure == failure => {}
                 _ => diagnostics.push(Diagnostic {
-                    code: "EVE0020",
+                    code: "CLQ0020",
                     path: format!("$.states[{index}].on_failure.{failure}"),
                     message: format!(
                         "failure edge must target a terminal fail state for {failure}"
@@ -503,7 +503,7 @@ fn validate_reachability(
     for state in &conversation.states {
         if !reachable.contains(state.id()) {
             diagnostics.push(Diagnostic {
-                code: "EVE0017",
+                code: "CLQ0017",
                 path: format!("$.states[id={}]", state.id()),
                 message: "state is unreachable from the initial state".to_string(),
             });
@@ -512,7 +512,7 @@ fn validate_reachability(
 
     if !reaches_terminal {
         diagnostics.push(Diagnostic {
-            code: "EVE0018",
+            code: "CLQ0018",
             path: "$.states".to_string(),
             message: "no successful or failed terminal state is reachable from the initial state"
                 .to_string(),
@@ -523,7 +523,7 @@ fn validate_reachability(
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Endpoint {
-    pub eve_endpoint: String,
+    pub colloq_endpoint: String,
     pub conversation: String,
     pub role: String,
     pub initial: String,
@@ -634,7 +634,7 @@ pub(crate) fn project_validated(conversation: &Conversation) -> Vec<Endpoint> {
             .collect();
 
         endpoints.push(Endpoint {
-            eve_endpoint: ENDPOINT_FORMAT.to_string(),
+            colloq_endpoint: ENDPOINT_FORMAT.to_string(),
             conversation: conversation.module.id.clone(),
             role: role.id.clone(),
             initial: conversation.initial.clone(),
@@ -888,7 +888,7 @@ mod tests {
     use super::*;
 
     fn conversation() -> Conversation {
-        serde_json::from_str(include_str!("../examples/generate.eveconv.json")).unwrap()
+        serde_json::from_str(include_str!("../examples/generate.colloqconv.json")).unwrap()
     }
 
     #[test]
@@ -989,7 +989,7 @@ mod tests {
             errors
                 .diagnostics
                 .iter()
-                .any(|diagnostic| diagnostic.code == "EVE0016")
+                .any(|diagnostic| diagnostic.code == "CLQ0016")
         );
     }
 
@@ -1004,7 +1004,7 @@ mod tests {
             errors
                 .diagnostics
                 .iter()
-                .any(|diagnostic| diagnostic.code == "EVE0020")
+                .any(|diagnostic| diagnostic.code == "CLQ0020")
         );
     }
 }

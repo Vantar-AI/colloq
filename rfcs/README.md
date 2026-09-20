@@ -1,6 +1,6 @@
-# Eve RFCs
+# Colloq RFCs
 
-RFCs define changes to Eve's portable semantics, canonical graph, public tooling contracts, and governance model.
+RFCs define changes to Colloq's portable semantics, canonical graph, public tooling contracts, and governance model.
 
 An RFC begins as a problem statement. It is not accepted merely because an implementation exists.
 
@@ -32,7 +32,7 @@ The implementation may evolve quickly. Accepted semantics require a conformance 
 
 | RFC | Status | Title |
 |---|---|---|
-| [0001](0001-eve-language-kernel.md) | Draft | The Eve language kernel |
+| [0001](0001-colloq-kernel.md) | Draft | The Colloq language kernel |
 | [0002](0002-conversation-is-the-computation.md) | Draft | The conversation is the computation |
 | [0003](0003-pluggable-substrates.md) | Experimental | Pluggable collaboration, connectivity, and deployment substrates |
-| [0004](0004-evidence-protocol.md) | Experimental | Eve evidence protocol |
+| [0004](0004-evidence-protocol.md) | Experimental | Colloq evidence protocol |

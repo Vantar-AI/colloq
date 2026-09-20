@@ -10,11 +10,11 @@ use iroh::endpoint::{Connection, ConnectionError, RecvStream, SendStream, VarInt
 use iroh::{Endpoint, EndpointAddr, EndpointId, RelayMode, SecretKey};
 use std::net::SocketAddr;
 
-/// Eve's application protocol identifier over Iroh QUIC.
-pub const EVE_IROH_ALPN: &[u8] = b"eve/0.1";
-const CHANNEL_BINDING_LABEL: &[u8] = b"EXPORTER-eve-session-v0";
+/// Colloq's application protocol identifier over Iroh QUIC.
+pub const COLLOQ_IROH_ALPN: &[u8] = b"colloq/0.1";
+const CHANNEL_BINDING_LABEL: &[u8] = b"EXPORTER-colloq-session-v0";
 
-/// A persistent-identity Iroh endpoint before it becomes one connected Eve transport.
+/// A persistent-identity Iroh endpoint before it becomes one connected Colloq transport.
 pub struct IrohNode {
     endpoint: Endpoint,
     runtime: tokio::runtime::Runtime,
@@ -32,7 +32,7 @@ impl IrohNode {
                     .bind_addr(address)
                     .map_err(|error| RuntimeError::Iroh(error.to_string()))?
                     .secret_key(secret_key)
-                    .alpns(vec![EVE_IROH_ALPN.to_vec()])
+                    .alpns(vec![COLLOQ_IROH_ALPN.to_vec()])
                     .relay_mode(RelayMode::Disabled)
                     .bind(),
             )
@@ -47,7 +47,7 @@ impl IrohNode {
             .block_on(
                 Endpoint::builder(presets::N0)
                     .secret_key(secret_key)
-                    .alpns(vec![EVE_IROH_ALPN.to_vec()])
+                    .alpns(vec![COLLOQ_IROH_ALPN.to_vec()])
                     .bind(),
             )
             .map_err(|error| RuntimeError::Iroh(error.to_string()))?;
@@ -121,7 +121,7 @@ impl IrohNode {
             })
             .map_err(RuntimeError::Iroh)?;
         if let Err(error) = verify_remote_authorized(&connection, authorized_peers) {
-            connection.close(VarInt::from_u32(1), b"unauthorized Eve endpoint");
+            connection.close(VarInt::from_u32(1), b"unauthorized Colloq endpoint");
             runtime.block_on(endpoint.close());
             return Err(error);
         }
@@ -170,7 +170,7 @@ impl IrohNode {
         }
         let Self { endpoint, runtime } = self;
         let connection = runtime
-            .block_on(async { endpoint.connect(remote, EVE_IROH_ALPN).await })
+            .block_on(async { endpoint.connect(remote, COLLOQ_IROH_ALPN).await })
             .map_err(|error| RuntimeError::Iroh(error.to_string()))?;
         verify_remote_identity(&connection, expected_peer)?;
         let (send, receive) = runtime
@@ -433,7 +433,7 @@ impl Transport for IrohTransport {
 
     fn abort(&mut self) {
         self.connection
-            .close(VarInt::from_u32(1), b"eve typed failure");
+            .close(VarInt::from_u32(1), b"colloq typed failure");
     }
 }
 
@@ -592,7 +592,7 @@ async fn read_close_marker(receive: &mut RecvStream) -> Result<(), String> {
         .await
         .map_err(|error| error.to_string())?;
     if u32::from_be_bytes(marker) != 0 {
-        return Err("expected Eve Iroh close marker".to_string());
+        return Err("expected Colloq Iroh close marker".to_string());
     }
     Ok(())
 }
@@ -612,7 +612,7 @@ mod tests {
     use crate::runtime::network_test_guard;
 
     fn conversation() -> Conversation {
-        serde_json::from_str(include_str!("../../examples/generate.eveconv.json")).unwrap()
+        serde_json::from_str(include_str!("../../examples/generate.colloqconv.json")).unwrap()
     }
 
     #[test]

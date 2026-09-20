@@ -1,6 +1,6 @@
 {
-  "$schema": "../spec/eve-jev-v0.schema.json",
-  "eve_jev": "0.1.0",
+  "$schema": "../spec/colloq-jev-v0.schema.json",
+  "colloq_jev": "0.1.0",
   "conversation": "example.route",
   "state": "route",
   "model": "jev-latest",

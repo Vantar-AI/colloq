@@ -1,12 +1,12 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://vantar.xyz/eve/spec/eve-evidence-v0.schema.json",
-  "title": "Eve Evidence Run v0",
-  "description": "A reproducible correctness, security, or performance result for one exact Eve revision and protocol configuration.",
+  "$id": "https://vantar.xyz/colloq/spec/colloq-evidence-v0.schema.json",
+  "title": "Colloq Evidence Run v0",
+  "description": "A reproducible correctness, security, or performance result for one exact Colloq revision and protocol configuration.",
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "eve_evidence",
+    "colloq_evidence",
     "run_id",
     "started_at",
     "finished_at",
@@ -23,7 +23,7 @@
   ],
   "properties": {
     "$schema": { "type": "string", "format": "uri-reference" },
-    "eve_evidence": { "const": "0.1.0" },
+    "colloq_evidence": { "const": "0.1.0" },
     "run_id": { "$ref": "#/$defs/nonEmpty" },
     "started_at": { "type": "string", "format": "date-time" },
     "finished_at": { "type": "string", "format": "date-time" },

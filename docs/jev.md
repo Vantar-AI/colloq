@@ -11,23 +11,23 @@ A `choice` state names the role that selects a branch:
   "branches": { "cached": "reply-cached", "infer": "reply-infer", "review": "reply-review" } }
 ```
 
-Eve checks that the chooser emits a declared label (`EndpointMachine::emit_select`), but Eve
+Colloq checks that the chooser emits a declared label (`EndpointMachine::emit_select`), but Colloq
 does not decide *which* label. Today that is hand-written code in the chooser. A Jev binding
 lets [TypeSafe](https://typesafe.ai)'s Jev System One model make that selection as a typed
 Choice judgment.
 
-Eve keeps the protocol. Jev only proposes one of the declared labels. It never writes to the
+Colloq keeps the protocol. Jev only proposes one of the declared labels. It never writes to the
 wire, never adds a branch, and never changes the conversation identity.
 
 ## The binding
 
 A binding is a separate file, so the conversation schema and its content identity do not
-change. See [`examples/route.evejev.json`](../examples/route.evejev.json) and the
-[schema](../spec/eve-jev-v0.schema.json).
+change. See [`examples/route.colloqjev.json`](../examples/route.colloqjev.json) and the
+[schema](../spec/colloq-jev-v0.schema.json).
 
 ```json
 {
-  "eve_jev": "0.1.0",
+  "colloq_jev": "0.1.0",
   "conversation": "example.route",
   "state": "route",
   "model": "jev-latest",
@@ -49,16 +49,16 @@ unless every check passes.
 
 | Code | Rule |
 | --- | --- |
-| `EVEJ001` | Unsupported binding format. |
-| `EVEJ002` | The binding names a different conversation module. |
-| `EVEJ003` | `model` is empty. |
-| `EVEJ004` | `threshold` is not within 0..=1. There is no default. |
-| `EVEJ005` | Fewer than two criteria. |
-| `EVEJ006` | The state is not a `choice`. |
-| `EVEJ007` | The state does not exist. |
-| `EVEJ008` | A criterion is not a branch of the state. |
-| `EVEJ009` | A branch other than `escalate` has no criterion, so Jev could never select it. |
-| `EVEJ010` | `escalate` is not a branch of the state. |
+| `CLQJ001` | Unsupported binding format. |
+| `CLQJ002` | The binding names a different conversation module. |
+| `CLQJ003` | `model` is empty. |
+| `CLQJ004` | `threshold` is not within 0..=1. There is no default. |
+| `CLQJ005` | Fewer than two criteria. |
+| `CLQJ006` | The state is not a `choice`. |
+| `CLQJ007` | The state does not exist. |
+| `CLQJ008` | A criterion is not a branch of the state. |
+| `CLQJ009` | A branch other than `escalate` has no criterion, so Jev could never select it. |
+| `CLQJ010` | `escalate` is not a branch of the state. |
 
 ## Decision rule
 
@@ -69,7 +69,7 @@ unless every check passes.
 | choice outside the criteria, or confidence outside 0..=1 | typed failure `jev.invalid_answer` |
 | missing key, transport error, non-2xx response | typed failure `jev.unavailable` |
 
-Eve never picks a branch silently when Jev fails. The caller decides what a Jev failure means
+Colloq never picks a branch silently when Jev fails. The caller decides what a Jev failure means
 for the session, for example by observing a declared failure. `429` and `529` responses are
 retried twice with backoff, as the TypeSafe API reference asks.
 
@@ -80,7 +80,7 @@ Every decision returns the evidence behind it: `label`, Jev's `choice`, `confide
 
 ```bash
 # Validate only. No network call.
-cargo run -- jev-check examples/route.eveconv.json examples/route.evejev.json
+cargo run -- jev-check examples/route.colloqconv.json examples/route.colloqjev.json
 
 # One live decision. The key stays in the environment and is never logged.
 export TYPESAFE_API_KEY=...
@@ -91,8 +91,8 @@ From Rust, implement or use a `jev::Decider` and pass the decision's `label` to
 `emit_select`:
 
 ```rust
-let bound = eve::jev::bind(&conversation, binding)?;
-let client = eve::jev::TypeSafeClient::from_env(Duration::from_secs(10))?;
+let bound = colloq::jev::bind(&conversation, binding)?;
+let client = colloq::jev::TypeSafeClient::from_env(Duration::from_secs(10))?;
 let decision = bound.decide(&client, &state)?;
 machine.emit_select(&decision.label)?;
 ```
@@ -105,7 +105,7 @@ This is a smoke test of the integration, not an accuracy measurement.
 | Request | Jev choice | Confidence | Label emitted |
 | --- | --- | ---: | --- |
 | "What are your opening hours on Saturday?" | `cached` | 0.99 | `cached` |
-| "Can you explain how Eve projects a conversation into endpoint machines?" | `infer` | 0.94 | `review` (escalated) |
+| "Can you explain how Colloq projects a conversation into endpoint machines?" | `infer` | 0.94 | `review` (escalated) |
 | "I was charged twice and I want a refund now or I will contact my lawyer." | `review` | 1.00 | `review` |
 
 The second row is the threshold doing its job: a correct but less certain answer takes the
@@ -118,12 +118,12 @@ declared escalation branch instead of advancing on its own.
   depends on the workload and the cost of a wrong branch. Measure it on representative data
   before relying on it. With a high threshold and an unfamiliar domain, most traffic will take
   the escalation branch; that is the intended safe behavior, not a success metric.
-- The call is a blocking HTTPS request to a hosted service. Its latency is outside Eve's
+- The call is a blocking HTTPS request to a hosted service. Its latency is outside Colloq's
   microsecond transition measurements and is not included in any benchmark.
 
 ## Deferred
 
 - Declaring Jev bindings inside the conversation (changes the schema and content identity).
-- Recording Jev decisions in Eve semantic traces and evidence reports.
+- Recording Jev decisions in Colloq semantic traces and evidence reports.
 - Jev inside the runtime demos, batching several choice states into one request, and
   a private or self-hosted model endpoint.

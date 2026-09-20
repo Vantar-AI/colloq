@@ -1,21 +1,21 @@
-# RFC-0001: The Eve language kernel
+# RFC-0001: The Colloq language kernel
 
 - **Status:** Draft
 - **Created:** 2026-08-06
-- **Target:** Eve Graph v0
+- **Target:** Colloq Graph v0
 - **Authors:** Vantar AI
 
 ## Summary
 
-Eve is graph-native, not text-native.
+Colloq is graph-native, not text-native.
 
 The authoritative program is a typed, content-addressed graph describing computation, communication, placement constraints, authority, failure, and evolution boundaries. Text files, visual canvases, conversational descriptions, and AI editing tools are projections and editors of that graph. No projection owns the program.
 
 The central invariant is:
 
-> Every valid projection denotes the same canonical Eve Graph, and every semantic change is a typed graph transaction.
+> Every valid projection denotes the same canonical Colloq Graph, and every semantic change is a typed graph transaction.
 
-Eve separates three artifacts:
+Colloq separates three artifacts:
 
 1. **Semantic graph** — portable program meaning.
 2. **Execution plan** — topology- and backend-specific realization.
@@ -31,7 +31,7 @@ Text is an effective interface for people, but a poor universal source of truth 
 
 Text-first tooling repeatedly reconstructs program structure, identity, dependencies, and intent from files. Distributed systems then split additional meaning across RPC schemas, deployment manifests, permissions, retry configuration, and observability conventions.
 
-Eve starts from different assumptions:
+Colloq starts from different assumptions:
 
 - the program is distributed by default;
 - its authors may be software;
@@ -47,11 +47,11 @@ The goal is not to hide distribution. The goal is to represent it precisely enou
 
 ### The graph is the program
 
-An Eve program is stored as canonical graph data. Human-readable source is generated from and parsed into this graph losslessly.
+An Colloq program is stored as canonical graph data. Human-readable source is generated from and parsed into this graph losslessly.
 
 Consequences:
 
-- a repository may export `.eve` text, but text files are not the fundamental database;
+- a repository may export `.colloq` text, but text files are not the fundamental database;
 - formatting and declaration order cannot change semantic identity;
 - tools operate on stable typed nodes rather than byte offsets whenever possible;
 - merges are graph transactions with semantic preconditions;
@@ -128,7 +128,7 @@ History is append-only. A current release is a signed reference into history, no
 
 ## Identity model
 
-Eve distinguishes four identities.
+Colloq distinguishes four identities.
 
 ### Content identity
 
@@ -250,7 +250,7 @@ A filling is accepted only if its derived contract is a subtype of the hole's ce
 
 ## Effects and failures
 
-Eve separates returned values, declared failures, and effects.
+Colloq separates returned values, declared failures, and effects.
 
 - A returned `Result<Value, Failure>` is part of ordinary control flow.
 - A declared failure records conditions such as timeout, unavailable, cancelled, rejected, or exhausted.
@@ -298,7 +298,7 @@ Failed transactions return structured diagnostics and a minimal conflicting subg
 
 ### Text projection
 
-Eve Source is a deterministic, human-readable projection. It supports comments and documentation as annotations, but canonical formatting has exactly one representation for semantic content.
+Colloq Source is a deterministic, human-readable projection. It supports comments and documentation as annotations, but canonical formatting has exactly one representation for semantic content.
 
 Parsing source produces a graph transaction. Printing the resulting graph and parsing it again must preserve semantic identity.
 
@@ -335,7 +335,7 @@ An opaque emergent code may be used inside this boundary. It never replaces the 
 
 ## Optimization and evolution
 
-Eve distinguishes two kinds of change.
+Colloq distinguishes two kinds of change.
 
 ### Semantics-preserving optimization
 
@@ -354,7 +354,7 @@ The candidate cannot edit the policy that evaluates it, forge measurements, expa
 The proposed lowering pipeline is:
 
 ```text
-Eve Graph
+Colloq Graph
   → resolved and checked graph
   → partitioned cell/flow graph
   → candidate execution graphs
@@ -362,7 +362,7 @@ Eve Graph
   → signed execution plan
 ```
 
-Eve may use MLIR dialects, native code, accelerator compilers, existing AI frameworks, or external services. These are lowering targets, not the definition of Eve semantics.
+Colloq may use MLIR dialects, native code, accelerator compilers, existing AI frameworks, or external services. These are lowering targets, not the definition of Colloq semantics.
 
 ## Minimal v0
 
@@ -399,7 +399,7 @@ RFC-0001 may advance from Draft to Experimental when:
 
 ### Text as the authoritative source
 
-This retains compatibility with existing version control and editors. Eve still exports canonical text for those tools, but making text authoritative would weaken structural identity, typed patching, partial-program semantics, and machine authorship.
+This retains compatibility with existing version control and editors. Colloq still exports canonical text for those tools, but making text authoritative would weaken structural identity, typed patching, partial-program semantics, and machine authorship.
 
 ### A library in an existing language
 
@@ -407,11 +407,11 @@ A library can prototype the runtime and should be used as a baseline. It cannot 
 
 ### An entirely emergent agent language
 
-Task-specific agents can discover efficient communication codes, but unconstrained emergent languages are difficult to interpret, version, secure, and compose. Eve confines emergent protocols behind typed, testable contracts.
+Task-specific agents can discover efficient communication codes, but unconstrained emergent languages are difficult to interpret, version, secure, and compose. Colloq confines emergent protocols behind typed, testable contracts.
 
 ### One universal wire protocol
 
-No single encoding or transport is optimal across small control messages, tensors, local memory, WAN links, collectives, and future hardware. Eve standardizes negotiation and meaning while allowing specialized plans.
+No single encoding or transport is optimal across small control messages, tensors, local memory, WAN links, collectives, and future hardware. Colloq standardizes negotiation and meaning while allowing specialized plans.
 
 ## Prior art
 
@@ -422,7 +422,7 @@ No single encoding or transport is optimal across small control messages, tensor
 - [egg and equality saturation](https://egraphs-good.github.io/egg/egg/tutorials/_01_background/) demonstrate compact representation and cost-based extraction of equivalent programs.
 - Actor languages, dataflow systems, capability machines, distributed tensor systems, and content-addressed stores provide additional foundations surveyed in [prior-art.md](../docs/prior-art.md).
 
-Eve's proposed contribution is not any one mechanism. It is their combination around a distributed, AI-authored, evolution-aware semantic graph.
+Colloq's proposed contribution is not any one mechanism. It is their combination around a distributed, AI-authored, evolution-aware semantic graph.
 
 ## Open questions
 

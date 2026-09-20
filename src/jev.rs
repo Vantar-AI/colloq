@@ -1,8 +1,8 @@
-//! Jev as a chooser for Eve `choice` states.
+//! Jev as a chooser for Colloq `choice` states.
 //!
-//! A choice state names the role that selects a branch, but Eve itself never
+//! A choice state names the role that selects a branch, but Colloq itself never
 //! decides which label that role emits. A Jev binding lets TypeSafe's Jev
-//! System One model make that selection as a typed Choice judgment. Eve keeps
+//! System One model make that selection as a typed Choice judgment. Colloq keeps
 //! the protocol: the model only proposes a declared label, the threshold is
 //! explicit, and a low-confidence answer deterministically takes the declared
 //! escalation branch. Service errors surface as typed failures instead of a
@@ -22,15 +22,15 @@ pub const TYPESAFE_ENDPOINT: &str = "https://api.typesafe.ai/v1/systemone";
 pub const TYPESAFE_API_KEY_ENV: &str = "TYPESAFE_API_KEY";
 
 /// Question key sent to TypeSafe. Keys are not visible to the model.
-const QUESTION_ID: &str = "eve_choice";
+const QUESTION_ID: &str = "colloq_choice";
 
-/// Binds one Eve choice state to one Jev Choice question.
+/// Binds one Colloq choice state to one Jev Choice question.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct JevBinding {
     #[serde(rename = "$schema", default)]
     pub schema: Option<String>,
-    pub eve_jev: String,
+    pub colloq_jev: String,
     /// Module ID of the bound conversation.
     pub conversation: String,
     /// ID of the bound `choice` state.
@@ -70,19 +70,19 @@ pub fn bind(
         })
     };
 
-    if binding.eve_jev != JEV_BINDING_FORMAT {
+    if binding.colloq_jev != JEV_BINDING_FORMAT {
         error(
-            "EVEJ001",
-            "$.eve_jev",
+            "CLQJ001",
+            "$.colloq_jev",
             format!(
                 "unsupported format {}; expected {JEV_BINDING_FORMAT}",
-                binding.eve_jev
+                binding.colloq_jev
             ),
         );
     }
     if binding.conversation != conversation.module.id {
         error(
-            "EVEJ002",
+            "CLQJ002",
             "$.conversation",
             format!(
                 "binding targets {}, but the conversation is {}",
@@ -91,18 +91,18 @@ pub fn bind(
         );
     }
     if binding.model.trim().is_empty() {
-        error("EVEJ003", "$.model", "model must not be empty".to_string());
+        error("CLQJ003", "$.model", "model must not be empty".to_string());
     }
     if !binding.threshold.is_finite() || !(0.0..=1.0).contains(&binding.threshold) {
         error(
-            "EVEJ004",
+            "CLQJ004",
             "$.threshold",
             format!("threshold {} must be within 0..=1", binding.threshold),
         );
     }
     if binding.criteria.len() < 2 {
         error(
-            "EVEJ005",
+            "CLQJ005",
             "$.criteria",
             "a Choice needs at least two options".to_string(),
         );
@@ -121,7 +121,7 @@ pub fn bind(
         ),
         Some(_) => {
             error(
-                "EVEJ006",
+                "CLQJ006",
                 "$.state",
                 format!("state {} is not a choice", binding.state),
             );
@@ -129,7 +129,7 @@ pub fn bind(
         }
         None => {
             error(
-                "EVEJ007",
+                "CLQJ007",
                 "$.state",
                 format!("state {} does not exist", binding.state),
             );
@@ -140,7 +140,7 @@ pub fn bind(
     for option in binding.criteria.keys() {
         if !branches.contains(option) {
             error(
-                "EVEJ008",
+                "CLQJ008",
                 &format!("$.criteria.{option}"),
                 format!("{option} is not a branch of {}", binding.state),
             );
@@ -149,7 +149,7 @@ pub fn bind(
     for branch in &branches {
         if branch != &binding.escalate && !binding.criteria.contains_key(branch) {
             error(
-                "EVEJ009",
+                "CLQJ009",
                 "$.criteria",
                 format!("branch {branch} has no criterion, so Jev can never select it"),
             );
@@ -157,7 +157,7 @@ pub fn bind(
     }
     if !branches.contains(&binding.escalate) {
         error(
-            "EVEJ010",
+            "CLQJ010",
             "$.escalate",
             format!("{} is not a branch of {}", binding.escalate, binding.state),
         );
@@ -202,7 +202,7 @@ pub enum JevError {
 }
 
 impl JevError {
-    /// Typed failure ID, in the same style as Eve's transport failures.
+    /// Typed failure ID, in the same style as Colloq's transport failures.
     pub fn failure_id(&self) -> &'static str {
         match self {
             Self::Unavailable(_) => "jev.unavailable",
@@ -405,8 +405,8 @@ pub fn parse_choice_response(response: &Value) -> Result<ChoiceAnswer, JevError>
 mod tests {
     use super::*;
 
-    const ROUTE: &str = include_str!("../examples/route.eveconv.json");
-    const ROUTE_JEV: &str = include_str!("../examples/route.evejev.json");
+    const ROUTE: &str = include_str!("../examples/route.colloqconv.json");
+    const ROUTE_JEV: &str = include_str!("../examples/route.colloqjev.json");
 
     struct Fixed(Result<ChoiceAnswer, JevError>);
 
@@ -509,14 +509,14 @@ mod tests {
     fn binding_must_target_a_choice_state() {
         let (conversation, mut binding) = fixtures();
         binding.state = "start".to_string();
-        assert_eq!(codes(bind(&conversation, binding)), ["EVEJ006"]);
+        assert_eq!(codes(bind(&conversation, binding)), ["CLQJ006"]);
     }
 
     #[test]
     fn binding_must_target_an_existing_state() {
         let (conversation, mut binding) = fixtures();
         binding.state = "missing".to_string();
-        assert_eq!(codes(bind(&conversation, binding)), ["EVEJ007"]);
+        assert_eq!(codes(bind(&conversation, binding)), ["CLQJ007"]);
     }
 
     #[test]
@@ -526,7 +526,7 @@ mod tests {
         binding
             .criteria
             .insert("refund".to_string(), Some("Money back".to_string()));
-        assert_eq!(codes(bind(&conversation, binding)), ["EVEJ008", "EVEJ009"]);
+        assert_eq!(codes(bind(&conversation, binding)), ["CLQJ008", "CLQJ009"]);
     }
 
     #[test]
@@ -541,14 +541,14 @@ mod tests {
         let (conversation, mut binding) = fixtures();
         binding.escalate = "human".to_string();
         binding.threshold = 1.2;
-        assert_eq!(codes(bind(&conversation, binding)), ["EVEJ004", "EVEJ010"]);
+        assert_eq!(codes(bind(&conversation, binding)), ["CLQJ004", "CLQJ010"]);
     }
 
     #[test]
     fn binding_must_match_the_conversation() {
         let (conversation, mut binding) = fixtures();
         binding.conversation = "example.generate".to_string();
-        assert_eq!(codes(bind(&conversation, binding)), ["EVEJ002"]);
+        assert_eq!(codes(bind(&conversation, binding)), ["CLQJ002"]);
     }
 
     #[test]

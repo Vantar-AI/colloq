@@ -1,10 +1,10 @@
 {
-  "$schema": "../spec/eve-evidence-v0.schema.json",
-  "eve_evidence": "0.1.0",
+  "$schema": "../spec/colloq-evidence-v0.schema.json",
+  "colloq_evidence": "0.1.0",
   "run_id": "example-local-7c3b462",
   "started_at": "2026-08-09T12:00:00Z",
   "finished_at": "2026-08-09T12:00:01Z",
-  "repository": "https://github.com/Vantar-AI/eve",
+  "repository": "https://github.com/Vantar-AI/colloq",
   "commit": "7c3b462c32956c7ea79e44da7c303d352d5d4dcd",
   "dirty": false,
   "environment": {
@@ -22,7 +22,7 @@
     "id": "request-token-done/json-channels/v0",
     "revision": "rfc-0004-v0",
     "workload": "W1 Generate",
-    "implementation": "eve-compact-warm",
+    "implementation": "colloq-compact-warm",
     "transport": "memory",
     "wire": "compact",
     "trials": 1,

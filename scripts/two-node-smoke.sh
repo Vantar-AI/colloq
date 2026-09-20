@@ -5,9 +5,9 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
 
-eve_bin="${EVE_BIN:-target/debug/eve}"
-if [[ ! -x "$eve_bin" ]]; then
-  echo "Eve binary not found at $eve_bin; run cargo build --locked first" >&2
+colloq_bin="${COLLOQ_BIN:-target/debug/colloq}"
+if [[ ! -x "$colloq_bin" ]]; then
+  echo "Colloq binary not found at $colloq_bin; run cargo build --locked first" >&2
   exit 1
 fi
 if ! command -v jq >/dev/null 2>&1; then
@@ -15,7 +15,7 @@ if ! command -v jq >/dev/null 2>&1; then
   exit 1
 fi
 
-work_dir="$(mktemp -d "${TMPDIR:-/tmp}/eve-two-node.XXXXXX")"
+work_dir="$(mktemp -d "${TMPDIR:-/tmp}/colloq-two-node.XXXXXX")"
 active_pid=""
 
 cleanup() {
@@ -36,7 +36,7 @@ wait_for_ticket() {
   local process_id="$2"
   local attempt
   for attempt in $(seq 1 100); do
-    if [[ -s "$ticket" ]] && jq -e '.eve_endpoint == "0.1.0" and (.addresses | length > 0)' "$ticket" >/dev/null; then
+    if [[ -s "$ticket" ]] && jq -e '.colloq_endpoint == "0.1.0" and (.addresses | length > 0)' "$ticket" >/dev/null; then
       return 0
     fi
     if ! kill -0 "$process_id" >/dev/null 2>&1; then
@@ -59,19 +59,19 @@ assert_private_mode() {
 }
 
 trust_dir="$work_dir/trust"
-"$eve_bin" bootstrap-two-node --out "$trust_dir" >"$work_dir/bootstrap.log"
+"$colloq_bin" bootstrap-two-node --out "$trust_dir" >"$work_dir/bootstrap.log"
 
-assert_private_mode "$trust_dir/server.evenode.json"
-assert_private_mode "$trust_dir/client.evenode.json"
+assert_private_mode "$trust_dir/server.colloqnode.json"
+assert_private_mode "$trust_dir/client.colloqnode.json"
 jq -e '.rules | length == 2' "$trust_dir/server.authorization.json" >/dev/null
 jq -e '.rules | length == 2' "$trust_dir/client.authorization.json" >/dev/null
 
-generate_ticket="$work_dir/generate-server.eveendpoint.json"
+generate_ticket="$work_dir/generate-server.colloqendpoint.json"
 generate_server_report="$work_dir/generate-server-report.json"
 generate_client_report="$work_dir/generate-client-report.json"
 
-"$eve_bin" serve-iroh \
-  --identity "$trust_dir/server.evenode.json" \
+"$colloq_bin" serve-iroh \
+  --identity "$trust_dir/server.colloqnode.json" \
   --policy "$trust_dir/server.authorization.json" \
   --listen 127.0.0.1:0 \
   --ticket-out "$generate_ticket" \
@@ -85,8 +85,8 @@ wait_for_ticket "$generate_ticket" "$generate_server_pid" || {
   fail "Generate server did not publish a ticket"
 }
 
-"$eve_bin" connect-iroh \
-  --identity "$trust_dir/client.evenode.json" \
+"$colloq_bin" connect-iroh \
+  --identity "$trust_dir/client.colloqnode.json" \
   --policy "$trust_dir/client.authorization.json" \
   --server "$generate_ticket" \
   --report-out "$generate_client_report" >"$work_dir/generate-client.log" 2>&1
@@ -97,28 +97,28 @@ if ! wait "$generate_server_pid"; then
 fi
 active_pid=""
 
-"$eve_bin" verify-session \
+"$colloq_bin" verify-session \
   --client "$generate_client_report" \
   --server "$generate_server_report" >"$work_dir/generate-verification.json"
 jq -e '.semantic_trace_equivalent and .outcome_equivalent and .client.completed and .server.completed' \
   "$work_dir/generate-verification.json" >/dev/null
 
-server_draft="$work_dir/server.evedraft"
-client_draft="$work_dir/client.evedraft"
-"$eve_bin" draft-create examples/generate.eveconv.json --out "$server_draft" >"$work_dir/draft-create.log"
+server_draft="$work_dir/server.colloqdraft"
+client_draft="$work_dir/client.colloqdraft"
+"$colloq_bin" draft-create examples/generate.colloqconv.json --out "$server_draft" >"$work_dir/draft-create.log"
 cp "$server_draft" "$client_draft"
-"$eve_bin" draft-patch "$server_draft" --pointer /annotations/server_observed --value true \
+"$colloq_bin" draft-patch "$server_draft" --pointer /annotations/server_observed --value true \
   >"$work_dir/draft-server-patch.log"
-"$eve_bin" draft-patch "$client_draft" --pointer /annotations/client_observed --value true \
+"$colloq_bin" draft-patch "$client_draft" --pointer /annotations/client_observed --value true \
   >"$work_dir/draft-client-patch.log"
 
-draft_ticket="$work_dir/draft-server.eveendpoint.json"
+draft_ticket="$work_dir/draft-server.colloqendpoint.json"
 draft_server_report="$work_dir/draft-server-report.json"
 draft_client_report="$work_dir/draft-client-report.json"
 
-"$eve_bin" draft-serve-iroh \
+"$colloq_bin" draft-serve-iroh \
   --draft "$server_draft" \
-  --identity "$trust_dir/server.evenode.json" \
+  --identity "$trust_dir/server.colloqnode.json" \
   --policy "$trust_dir/server.authorization.json" \
   --listen 127.0.0.1:0 \
   --ticket-out "$draft_ticket" \
@@ -131,9 +131,9 @@ wait_for_ticket "$draft_ticket" "$draft_server_pid" || {
   fail "draft-sync server did not publish a ticket"
 }
 
-"$eve_bin" draft-connect-iroh \
+"$colloq_bin" draft-connect-iroh \
   --draft "$client_draft" \
-  --identity "$trust_dir/client.evenode.json" \
+  --identity "$trust_dir/client.colloqnode.json" \
   --policy "$trust_dir/client.authorization.json" \
   --server "$draft_ticket" \
   --report-out "$draft_client_report" >"$work_dir/draft-client.log" 2>&1
@@ -151,33 +151,33 @@ jq -e -s '
   .[0].heads == .[1].heads
 ' "$draft_client_report" "$draft_server_report" >/dev/null
 
-"$eve_bin" draft-promote "$server_draft" \
-  --conversation-out "$work_dir/server-promoted.eveconv.json" \
-  --plan-out "$work_dir/server-promoted.eveplan.json" >"$work_dir/server-promote.log"
-"$eve_bin" draft-promote "$client_draft" \
-  --conversation-out "$work_dir/client-promoted.eveconv.json" \
-  --plan-out "$work_dir/client-promoted.eveplan.json" >"$work_dir/client-promote.log"
+"$colloq_bin" draft-promote "$server_draft" \
+  --conversation-out "$work_dir/server-promoted.colloqconv.json" \
+  --plan-out "$work_dir/server-promoted.colloqplan.json" >"$work_dir/server-promote.log"
+"$colloq_bin" draft-promote "$client_draft" \
+  --conversation-out "$work_dir/client-promoted.colloqconv.json" \
+  --plan-out "$work_dir/client-promoted.colloqplan.json" >"$work_dir/client-promote.log"
 
-cmp "$work_dir/server-promoted.eveconv.json" "$work_dir/client-promoted.eveconv.json" >/dev/null \
+cmp "$work_dir/server-promoted.colloqconv.json" "$work_dir/client-promoted.colloqconv.json" >/dev/null \
   || fail "promoted conversations diverged"
-cmp "$work_dir/server-promoted.eveplan.json" "$work_dir/client-promoted.eveplan.json" >/dev/null \
+cmp "$work_dir/server-promoted.colloqplan.json" "$work_dir/client-promoted.colloqplan.json" >/dev/null \
   || fail "promoted plans diverged"
 jq -e '.annotations.server_observed and .annotations.client_observed' \
-  "$work_dir/client-promoted.eveconv.json" >/dev/null
+  "$work_dir/client-promoted.colloqconv.json" >/dev/null
 
-impostor_identity="$work_dir/impostor.evenode.json"
+impostor_identity="$work_dir/impostor.colloqnode.json"
 impostor_policy="$work_dir/impostor.authorization.json"
-"$eve_bin" node-init --out "$impostor_identity" >"$work_dir/impostor-init.log"
+"$colloq_bin" node-init --out "$impostor_identity" >"$work_dir/impostor-init.log"
 assert_private_mode "$impostor_identity"
-server_identity="$(jq -r '.endpoint_identity' "$trust_dir/server.evenode.json")"
-"$eve_bin" policy-allow \
+server_identity="$(jq -r '.endpoint_identity' "$trust_dir/server.colloqnode.json")"
+"$colloq_bin" policy-allow \
   --policy "$impostor_policy" \
   --peer "$server_identity" \
   --role server >"$work_dir/impostor-policy.log"
 
-unauthorized_ticket="$work_dir/unauthorized-server.eveendpoint.json"
-"$eve_bin" serve-iroh \
-  --identity "$trust_dir/server.evenode.json" \
+unauthorized_ticket="$work_dir/unauthorized-server.colloqendpoint.json"
+"$colloq_bin" serve-iroh \
+  --identity "$trust_dir/server.colloqnode.json" \
   --policy "$trust_dir/server.authorization.json" \
   --listen 127.0.0.1:0 \
   --ticket-out "$unauthorized_ticket" >"$work_dir/unauthorized-server.log" 2>&1 &
@@ -189,7 +189,7 @@ wait_for_ticket "$unauthorized_ticket" "$unauthorized_server_pid" || {
   fail "authorization test server did not publish a ticket"
 }
 
-if "$eve_bin" connect-iroh \
+if "$colloq_bin" connect-iroh \
   --identity "$impostor_identity" \
   --policy "$impostor_policy" \
   --server "$unauthorized_ticket" >"$work_dir/unauthorized-client.log" 2>&1; then

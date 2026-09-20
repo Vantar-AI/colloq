@@ -1,4 +1,4 @@
-//! Incremental Automerge synchronization carried by an ordinary authenticated Eve conversation.
+//! Incremental Automerge synchronization carried by an ordinary authenticated Colloq conversation.
 
 use crate::Frame;
 use crate::graph::{AutomergeDraft, DraftError, DraftSyncSession};
@@ -16,9 +16,9 @@ pub enum DraftExchangeError {
     Runtime(#[from] RuntimeError),
     #[error(transparent)]
     Draft(#[from] DraftError),
-    #[error("invalid Eve draft-sync payload: {0}")]
+    #[error("invalid Colloq draft-sync payload: {0}")]
     Payload(String),
-    #[error("Eve draft sync exceeded {MAX_SYNC_ROUNDS} rounds")]
+    #[error("Colloq draft sync exceeded {MAX_SYNC_ROUNDS} rounds")]
     TooManyRounds,
 }
 
@@ -223,12 +223,12 @@ mod tests {
     use crate::runtime::memory_pair;
 
     fn generate() -> Conversation {
-        serde_json::from_str(include_str!("../examples/generate.eveconv.json")).unwrap()
+        serde_json::from_str(include_str!("../examples/generate.colloqconv.json")).unwrap()
     }
 
     fn sync_plan() -> PreparedPlan {
         let conversation: Conversation =
-            serde_json::from_str(include_str!("../examples/draft-sync.eveconv.json")).unwrap();
+            serde_json::from_str(include_str!("../examples/draft-sync.colloqconv.json")).unwrap();
         PreparedPlan::compile(&conversation).unwrap()
     }
 

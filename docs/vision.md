@@ -11,11 +11,11 @@ The dominant programming abstractions were not designed for this:
 - Orchestrators understand containers and desired replicas, but not the semantics of tensors, streams, or evaluation gates.
 - AI frameworks understand graphs and gradients, but usually treat the surrounding distributed system as configuration and runtime convention.
 
-Eve's thesis is stronger than putting computation beside communication: **server conversation is computation**. One global interaction should compile into the local programs and wire behavior of every participant while placement and governed evolution remain part of the same semantic model.
+Colloq's thesis is stronger than putting computation beside communication: **server conversation is computation**. One global interaction should compile into the local programs and wire behavior of every participant while placement and governed evolution remain part of the same semantic model.
 
 ## The target
 
-Eve targets persistent AI workloads running inside data centers and machine clusters:
+Colloq targets persistent AI workloads running inside data centers and machine clusters:
 
 - distributed training and inference;
 - mixtures of experts and model routing;
@@ -25,13 +25,13 @@ Eve targets persistent AI workloads running inside data centers and machine clus
 - robotics or embodied fleets coordinating with server-side intelligence;
 - heterogeneous compute spanning CPUs, GPUs, novel accelerators, and eventually biological or neuromorphic substrates.
 
-Eve is not primarily an edge-function language. It assumes long-running state, high-rate server-to-server communication, heterogeneous hardware, topology, partial failure, and workloads that can change while the system remains alive.
+Colloq is not primarily an edge-function language. It assumes long-running state, high-rate server-to-server communication, heterogeneous hardware, topology, partial failure, and workloads that can change while the system remains alive.
 
 ## What “AI-native” means
 
 AI models can generate existing languages. A language does not become AI-native merely by resembling English.
 
-For Eve, AI-native means:
+For Colloq, AI-native means:
 
 - a canonical typed graph as the program, with text and visual projections;
 - content identity independent of human names and formatting;
@@ -46,11 +46,11 @@ For Eve, AI-native means:
 
 Human readability remains essential because people must audit the systems that models produce.
 
-Eve therefore does not ask one representation to serve everyone. People may read canonical text or topology views, AI systems may query and patch typed graph slices, and runtimes consume specialized execution plans. All remain anchored to the same portable semantics.
+Colloq therefore does not ask one representation to serve everyone. People may read canonical text or topology views, AI systems may query and patch typed graph slices, and runtimes consume specialized execution plans. All remain anchored to the same portable semantics.
 
 ## The end state
 
-An Eve program should be able to describe an AI system as a typed graph of state and behavior, compile it for the available data-center topology, and safely accept candidate revisions while it runs.
+An Colloq program should be able to describe an AI system as a typed graph of state and behavior, compile it for the available data-center topology, and safely accept candidate revisions while it runs.
 
 The language should make the following sentence precise:
 
@@ -58,6 +58,6 @@ The language should make the following sentence precise:
 
 ## Relationship to Vantar AI
 
-Vantar AI asks how software can span unconventional computational substrates. Nuro focuses on expressing and deploying computation across neuromorphic and related hardware. Eve explores the distributed layer: how intelligent workloads communicate, coordinate, and evolve across servers and substrates.
+Vantar AI asks how software can span unconventional computational substrates. Nuro focuses on expressing and deploying computation across neuromorphic and related hardware. Colloq explores the distributed layer: how intelligent workloads communicate, coordinate, and evolve across servers and substrates.
 
-The projects can remain independent. A future Eve backend could invoke Nuro-compiled components without making Nuro part of Eve's core semantics.
+The projects can remain independent. A future Colloq backend could invoke Nuro-compiled components without making Nuro part of Colloq's core semantics.

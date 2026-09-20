@@ -1,19 +1,19 @@
-# Two-node Eve/Iroh runbook
+# Two-node Colloq/Iroh runbook
 
-This is the first end-to-end path in which the two Eve roles are independent operating-system
+This is the first end-to-end path in which the two Colloq roles are independent operating-system
 processes with persistent identities and local authorization policy. It is intended for a laptop,
 two routable data-center hosts, or a Miren UDP node port. It is not yet a production key-management
 system.
 
 ## Trust artifacts
 
-Eve deliberately separates three files:
+Colloq deliberately separates three files:
 
 | Artifact | Contains | Distribution |
 | --- | --- | --- |
-| `*.evenode.json` | Ed25519 private key and derived Iroh Endpoint ID | Local secret; mode `0600` on Unix |
-| `*.eveendpoint.json` | Public Endpoint ID and direct socket addresses | Give to connecting peers |
-| `*.authorization.json` | Exact Endpoint ID → role → Eve Plan grants | Local policy |
+| `*.colloqnode.json` | Ed25519 private key and derived Iroh Endpoint ID | Local secret; mode `0600` on Unix |
+| `*.colloqendpoint.json` | Public Endpoint ID and direct socket addresses | Give to connecting peers |
+| `*.authorization.json` | Exact Endpoint ID → role → Colloq Plan grants | Local policy |
 
 There are no wildcard grants in v0. A changed conversation produces a changed plan identity and
 therefore needs a new explicit authorization.
@@ -31,7 +31,7 @@ The harness checks a successful Generate session, independently edited draft con
 promotion, private identity file permissions, and fail-closed rejection of an unknown endpoint.
 
 Create two node identities and reciprocal policy for both the Generate workload and the
-`eve.draft-sync` control conversation:
+`colloq.draft-sync` control conversation:
 
 ```bash
 cargo run -- bootstrap-two-node --out build/two-node
@@ -42,7 +42,7 @@ Start the server in one terminal. It writes a public ticket before accepting one
 ```bash
 cargo run -- serve-iroh \
   --listen 127.0.0.1:7880 \
-  --ticket-out build/two-node/server.eveendpoint.json \
+  --ticket-out build/two-node/server.colloqendpoint.json \
   --report-out build/two-node/server-report.json \
   --tokens 4
 ```
@@ -51,7 +51,7 @@ Connect from another terminal and verify the independently recorded outcomes:
 
 ```bash
 cargo run -- connect-iroh \
-  --server build/two-node/server.eveendpoint.json \
+  --server build/two-node/server.colloqendpoint.json \
   --report-out build/two-node/client-report.json
 
 cargo run -- verify-session \
@@ -67,18 +67,18 @@ tokens, success result, and terminal outcome.
 Generate each identity on the machine that will own it:
 
 ```bash
-cargo run -- node-init --out /secure/eve/server.evenode.json
-cargo run -- node-init --out /secure/eve/client.evenode.json
+cargo run -- node-init --out /secure/colloq/server.colloqnode.json
+cargo run -- node-init --out /secure/colloq/client.colloqnode.json
 ```
 
 Exchange only the printed public Endpoint IDs. On the server, grant the client ID the `client`
 role; on the client, grant the server ID the `server` role:
 
 ```bash
-cargo run -- policy-allow --policy /secure/eve/server.authorization.json \
+cargo run -- policy-allow --policy /secure/colloq/server.authorization.json \
   --peer CLIENT_ENDPOINT_ID --role client
 
-cargo run -- policy-allow --policy /secure/eve/client.authorization.json \
+cargo run -- policy-allow --policy /secure/colloq/client.authorization.json \
   --peer SERVER_ENDPOINT_ID --role server
 ```
 
@@ -86,39 +86,39 @@ The server binds all interfaces but advertises the address reachable by the clie
 
 ```bash
 cargo run --release --locked -- serve-iroh \
-  --identity /secure/eve/server.evenode.json \
-  --policy /secure/eve/server.authorization.json \
+  --identity /secure/colloq/server.colloqnode.json \
+  --policy /secure/colloq/server.authorization.json \
   --listen 0.0.0.0:7880 \
   --advertise 10.20.0.12:7880 \
-  --ticket-out /tmp/server.eveendpoint.json
+  --ticket-out /tmp/server.colloqendpoint.json
 ```
 
-Copy only `/tmp/server.eveendpoint.json` to the client, then run `connect-iroh` with the client
-identity and policy. Allow UDP on the selected port. Iroh authenticates both Endpoint IDs; Eve then
+Copy only `/tmp/server.colloqendpoint.json` to the client, then run `connect-iroh` with the client
+identity and policy. Allow UDP on the selected port. Iroh authenticates both Endpoint IDs; Colloq then
 binds the exact roles, compiled plan, wire encoding, and TLS exporter before frame zero.
 
 ## Authenticated collaborative draft sync
 
-Draft synchronization is itself a projected Eve conversation. The peers exchange incremental
+Draft synchronization is itself a projected Colloq conversation. The peers exchange incremental
 Automerge sync messages as typed `sync` transitions; completion is an explicit `done` choice.
 
 ```bash
 # Create the same initial draft on both hosts, then edit independently.
-cargo run -- draft-create examples/generate.eveconv.json \
-  --out build/two-node/server.evedraft
+cargo run -- draft-create examples/generate.colloqconv.json \
+  --out build/two-node/server.colloqdraft
 
 # Server
 cargo run -- draft-serve-iroh \
-  --draft build/two-node/server.evedraft \
+  --draft build/two-node/server.colloqdraft \
   --listen 127.0.0.1:7881
 
 # Client
 cargo run -- draft-connect-iroh \
-  --draft build/two-node/client.evedraft \
-  --server build/two-node/draft-server.eveendpoint.json
+  --draft build/two-node/client.colloqdraft \
+  --server build/two-node/draft-server.colloqendpoint.json
 ```
 
-Both draft files are saved after synchronization. Automerge convergence does not bypass Eve's
+Both draft files are saved after synchronization. Automerge convergence does not bypass Colloq's
 promotion gate: unresolved meaning conflicts are still rejected, then the materialized graph is
 strictly deserialized, validated, and compiled.
 
@@ -127,19 +127,19 @@ strictly deserialized, validated, and compiled.
 Miren v0.5+ supports UDP node ports for non-HTTP services. Generate an Iroh-specific manifest:
 
 ```bash
-cargo run -- emit-miren examples/generate.eveconv.json \
+cargo run -- emit-miren examples/generate.colloqconv.json \
   --transport iroh --port 7880
 ```
 
 The manifest exposes UDP `7880` and declares three required values:
 
-- `EVE_NODE_IDENTITY_JSON` — sensitive node identity JSON;
-- `EVE_AUTHORIZATION_JSON` — sensitive exact authorization policy JSON;
-- `EVE_ADVERTISE_ADDRESS` — the Miren host or overlay socket address peers can reach.
+- `COLLOQ_NODE_IDENTITY_JSON` — sensitive node identity JSON;
+- `COLLOQ_AUTHORIZATION_JSON` — sensitive exact authorization policy JSON;
+- `COLLOQ_ADVERTISE_ADDRESS` — the Miren host or overlay socket address peers can reach.
 
 Set those through Miren's environment management and run `miren deploy`. A connecting node receives
-the corresponding public ticket out of band, or supplies it through `EVE_SERVER_TICKET_JSON`.
-Miren owns image placement, restart, and UDP forwarding; Eve/Iroh owns peer authentication and the
+the corresponding public ticket out of band, or supplies it through `COLLOQ_SERVER_TICKET_JSON`.
+Miren owns image placement, restart, and UDP forwarding; Colloq/Iroh owns peer authentication and the
 language session. See the official [Miren app.toml reference](https://miren.md/app-toml) and
 [non-HTTP traffic routing](https://miren.md/traffic-routing).
 

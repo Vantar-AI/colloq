@@ -1,6 +1,6 @@
 # Roadmap
 
-Eve should advance by falsifiable prototypes, not by designing a large language in isolation.
+Colloq should advance by falsifiable prototypes, not by designing a large language in isolation.
 
 ## Phase 0 — Problem corpus
 
@@ -29,9 +29,9 @@ Eve should advance by falsifiable prototypes, not by designing a large language 
 
 **Exit criterion:** one conversation graph projects into compatible endpoints and runs unchanged on a laptop simulation and a multi-node deployment, with explainable plan differences; a typed hole can be queried and filled without text rewriting.
 
-**Current evidence:** the request/token/cancel graph now compiles once into a verified, identified Eve Plan whose shared endpoint graphs create lightweight sessions over memory, TCP, authenticated QUIC, and mutually authenticated Iroh. Reference and compact paths reconstruct the same semantic traces across all four transports. Network peers exchange a strict version/conversation/plan/role/encoding preface and reject mismatches before frame zero; Iroh additionally binds persistent endpoint identities and a TLS exporter from the concrete connection. Independent processes load private identities, exchange public direct-address tickets, and enforce exact peer/role/plan authorization. A two-process acceptance run produced matching semantic-trace reports. An Automerge draft store supports optimistic graph patches, and its incremental sync messages now travel through a projected, authenticated Eve conversation before the conflict-rejecting validation/promotion gate. A Miren adapter emits TCP or Iroh/UDP manifests whose expected Eve identities and required secret configuration are explicit. Compact encoding improves the isolated transition by 1.32× and the full warm workload by 1.11×, though it remains 1.51× the hand-written baseline. Deterministic faults preserve asymmetric timeout and uncertainty observations. An optional Jev binding ([docs/jev.md](jev.md)) lets TypeSafe's Jev model select the label at a validated choice state, with an explicit threshold and a declared escalation branch; its accuracy on representative workloads is not yet measured. Execution on two physical hosts, identity rotation and revocation, replay-resistant freshness, canonical identity, typed composite graph transactions, recovery semantics, and representative AI benchmarks remain open.
+**Current evidence:** the request/token/cancel graph now compiles once into a verified, identified Colloq Plan whose shared endpoint graphs create lightweight sessions over memory, TCP, authenticated QUIC, and mutually authenticated Iroh. Reference and compact paths reconstruct the same semantic traces across all four transports. Network peers exchange a strict version/conversation/plan/role/encoding preface and reject mismatches before frame zero; Iroh additionally binds persistent endpoint identities and a TLS exporter from the concrete connection. Independent processes load private identities, exchange public direct-address tickets, and enforce exact peer/role/plan authorization. A two-process acceptance run produced matching semantic-trace reports. An Automerge draft store supports optimistic graph patches, and its incremental sync messages now travel through a projected, authenticated Colloq conversation before the conflict-rejecting validation/promotion gate. A Miren adapter emits TCP or Iroh/UDP manifests whose expected Colloq identities and required secret configuration are explicit. Compact encoding improves the isolated transition by 1.32× and the full warm workload by 1.11×, though it remains 1.51× the hand-written baseline. Deterministic faults preserve asymmetric timeout and uncertainty observations. An optional Jev binding ([docs/jev.md](jev.md)) lets TypeSafe's Jev model select the label at a validated choice state, with an explicit threshold and a declared escalation branch; its accuracy on representative workloads is not yet measured. Execution on two physical hosts, identity rotation and revocation, replay-resistant freshness, canonical identity, typed composite graph transactions, recovery semantics, and representative AI benchmarks remain open.
 
-## Phase 2 — Minimal Eve front end
+## Phase 2 — Minimal Colloq front end
 
 **Goal:** test whether a purpose-built language materially improves authorship and static checking.
 
@@ -41,7 +41,7 @@ Eve should advance by falsifiable prototypes, not by designing a large language 
 - Provide a Rust or Python embedding API.
 - Compare model-generated graph transactions with text edits and equivalent changes in conventional infrastructure code.
 
-**Exit criterion:** Eve prevents meaningful distributed failures before deployment and reduces the amount of workload-specific orchestration code.
+**Exit criterion:** Colloq prevents meaningful distributed failures before deployment and reduces the amount of workload-specific orchestration code.
 
 ## Phase 3 — Tensor and accelerator paths
 

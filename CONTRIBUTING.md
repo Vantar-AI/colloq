@@ -1,13 +1,13 @@
-# Contributing to Eve
+# Contributing to Colloq
 
-Eve is currently a documentation-first research project. Contributions should make the thesis more precise, more testable, or easier to falsify.
+Colloq is currently a documentation-first research project. Contributions should make the thesis more precise, more testable, or easier to falsify.
 
 ## Useful contributions
 
 - A real distributed AI workload and its constraints.
 - An incident or failure mode current abstractions make difficult to prevent.
 - A minimal syntax proposal paired with exact IR and runtime semantics.
-- A comparison with prior work that changes or narrows Eve's direction.
+- A comparison with prior work that changes or narrows Colloq's direction.
 - A benchmark design with a conventional baseline.
 - A security analysis of generated or evolutionary programs.
 - A typed graph operation, canonicalization fixture, or projection round-trip case.

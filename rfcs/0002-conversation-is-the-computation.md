@@ -3,14 +3,14 @@
 - **Status:** Draft
 - **Created:** 2026-08-06
 - **Requires:** RFC-0001
-- **Target:** Eve Conversation v0
+- **Target:** Colloq Conversation v0
 - **Authors:** Vantar AI
 
 ## Summary
 
-Eve is the language servers speak to compute together.
+Colloq is the language servers speak to compute together.
 
-An Eve program is not divided first into independent server programs joined later by APIs. It begins as a typed global conversation among roles. The compiler projects that conversation into local endpoint machines, then specializes their wire representation for the target topology.
+An Colloq program is not divided first into independent server programs joined later by APIs. It begins as a typed global conversation among roles. The compiler projects that conversation into local endpoint machines, then specializes their wire representation for the target topology.
 
 The central invariant is:
 
@@ -20,14 +20,14 @@ Servers exchange data, choices, channels, capabilities, graph references, contin
 
 ## Clarification of RFC-0001
 
-RFC-0001 establishes the canonical Eve Graph. This RFC identifies the graph's primary executable meaning: a **conversation graph**.
+RFC-0001 establishes the canonical Colloq Graph. This RFC identifies the graph's primary executable meaning: a **conversation graph**.
 
 - Cells are participants or local computations.
 - Ports are role boundaries.
 - Flows are ordered conversation steps, not merely data pipes.
 - The semantic graph contains a global protocol.
 - Endpoint projection derives each participant's legal local state machine.
-- Eve Wire carries the runtime transitions of those machines.
+- Colloq Wire carries the runtime transitions of those machines.
 
 The execution plan may aggressively optimize or fuse those transitions, but it must preserve the observable conversation contract.
 
@@ -41,7 +41,7 @@ client code + server code + schema + SDK + deployment + retry policy
 
 The intended conversation exists only implicitly across those artifacts. Each participant implements its own partial understanding. Mismatched ordering, retries, version assumptions, cancellation, and failure behavior appear at runtime.
 
-Eve authors one shared interaction:
+Colloq authors one shared interaction:
 
 ```text
 global conversation
@@ -63,7 +63,7 @@ The idea has deep precedents.
 - Choreographic programming writes the distributed interaction once and compiles endpoint implementations.
 - Actor and state-machine languages model isolated participants exchanging asynchronous messages.
 
-Eve does not claim to invent communicating processes. Its proposed step is to make them the substrate for AI-authored server systems, content-addressed graph transactions, synthesized high-performance transports, and governed protocol evolution.
+Colloq does not claim to invent communicating processes. Its proposed step is to make them the substrate for AI-authored server systems, content-addressed graph transactions, synthesized high-performance transports, and governed protocol evolution.
 
 ## Decision
 
@@ -136,7 +136,7 @@ This calculus is a semantic sketch, not final surface syntax.
 
 ## Text projection example
 
-```eve
+```colloq
 conversation Generate(prompt: Prompt) -> stream<Token> {
     roles client, router, expert[*]
 
@@ -184,9 +184,9 @@ Projection fails when a global graph requires a participant to behave differentl
 
 The v0 checker should provide a counterexample trace and the smallest ambiguous subgraph when projection fails.
 
-## Eve Wire
+## Colloq Wire
 
-Eve Wire is the machine-facing language spoken by projected endpoints.
+Colloq Wire is the machine-facing language spoken by projected endpoints.
 
 ### Control transitions
 
@@ -247,7 +247,7 @@ Ownership, lifetime, layout, synchronization, and failure remain part of the typ
 
 ## Mobility
 
-Eve conversations may transmit more than ordinary values.
+Colloq conversations may transmit more than ordinary values.
 
 ### Channel mobility
 
@@ -338,7 +338,7 @@ Conversation state is an authorization boundary.
 
 The benefit is not the cost of spelling `send` differently.
 
-Because Eve sees the complete conversation, it can:
+Because Colloq sees the complete conversation, it can:
 
 - eliminate separately maintained client and server protocol logic;
 - check message order and role knowledge before deployment;
@@ -354,7 +354,7 @@ The performance claim must be benchmarked. A conversation abstraction that adds 
 
 ## Minimal v0
 
-Eve Conversation v0 supports:
+Colloq Conversation v0 supports:
 
 - two or three statically known roles;
 - typed `send`, `choice`, `repeat`, `cancel`, and `end`;
@@ -371,7 +371,7 @@ Mobility and protocol evolution remain in the semantics so v0 choices do not mak
 
 ### Prototype status
 
-The initial Rust prototype implements the two-role subset with typed transitions, choices, cyclic continuations, cancellation, declared terminal failures, endpoint projection, and offline frame-trace validation. A conversation compiles into a verified Eve Plan with deterministic conversation and plan identities, immutable endpoint graphs, and dense compact transition IDs. Projected endpoints execute through memory, length-delimited TCP, TLS-authenticated QUIC, or mutually authenticated Iroh. The reference envelope binds the experimental semantic conversation hash, state, and sequence; compact mode sends only transition ID, sequence, and optional payload, then reconstructs those semantics from the verified plan. Network roles first exchange a fail-closed session preface binding version, conversation, plan, roles, and exact encoding. Iroh additionally binds both expected endpoint keys and a TLS exporter from the concrete connection. Tests require both encodings to produce the same trace across all transports and reject plan, peer, or downgrade mismatches before frame zero. An Automerge draft adapter rejects conflicts before Eve validation and promotion; a Miren adapter emits an identity-bound testbed manifest and container. Deterministic operation-level fault injection can preserve asymmetric local outcomes such as server timeout and client uncertainty. Compact encoding improves measured transition and warm-workload medians, but still misses the provisional baseline margin. This is a correctness reference runtime, not yet an asynchronous, authorized, fault-tolerant, or optimized network runtime.
+The initial Rust prototype implements the two-role subset with typed transitions, choices, cyclic continuations, cancellation, declared terminal failures, endpoint projection, and offline frame-trace validation. A conversation compiles into a verified Colloq Plan with deterministic conversation and plan identities, immutable endpoint graphs, and dense compact transition IDs. Projected endpoints execute through memory, length-delimited TCP, TLS-authenticated QUIC, or mutually authenticated Iroh. The reference envelope binds the experimental semantic conversation hash, state, and sequence; compact mode sends only transition ID, sequence, and optional payload, then reconstructs those semantics from the verified plan. Network roles first exchange a fail-closed session preface binding version, conversation, plan, roles, and exact encoding. Iroh additionally binds both expected endpoint keys and a TLS exporter from the concrete connection. Tests require both encodings to produce the same trace across all transports and reject plan, peer, or downgrade mismatches before frame zero. An Automerge draft adapter rejects conflicts before Colloq validation and promotion; a Miren adapter emits an identity-bound testbed manifest and container. Deterministic operation-level fault injection can preserve asymmetric local outcomes such as server timeout and client uncertainty. Compact encoding improves measured transition and warm-workload medians, but still misses the provisional baseline margin. This is a correctness reference runtime, not yet an asynchronous, authorized, fault-tolerant, or optimized network runtime.
 
 ## Acceptance criteria
 
@@ -398,11 +398,11 @@ Actors provide isolation and messaging, but global protocol consistency must be 
 
 ### Natural language between servers
 
-Natural language is valuable for uncertain semantic tasks. It is inefficient and ambiguous for transport contracts, authority, deadlines, ownership, and reproducible protocol state. Eve may carry natural-language values without using natural language as its execution semantics.
+Natural language is valuable for uncertain semantic tasks. It is inefficient and ambiguous for transport contracts, authority, deadlines, ownership, and reproducible protocol state. Colloq may carry natural-language values without using natural language as its execution semantics.
 
 ### Fully opaque emergent protocols
 
-Agents may discover efficient codes, but an opaque system cannot reliably support independent implementations, governance, incident analysis, compatibility, or security. Eve allows emergent encodings behind explicit conformance boundaries.
+Agents may discover efficient codes, but an opaque system cannot reliably support independent implementations, governance, incident analysis, compatibility, or security. Colloq allows emergent encodings behind explicit conformance boundaries.
 
 ## Prior art
 
