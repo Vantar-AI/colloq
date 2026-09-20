@@ -22,6 +22,7 @@ const DOCS = [
   { slug: "wire", file: "docs/wire.md", title: "Colloq Wire", group: "Model" },
   { slug: "runtime", file: "docs/runtime.md", title: "Runtime", group: "Running it" },
   { slug: "two-node", file: "docs/two-node.md", title: "Two-node runbook", group: "Running it" },
+  { slug: "multi-host", file: "docs/multi-host.md", title: "Multi-host plan", group: "Running it" },
   { slug: "substrates", file: "docs/substrates.md", title: "Substrates", group: "Running it" },
   { slug: "benchmark", file: "docs/benchmark.md", title: "Benchmark", group: "Evidence" },
   { slug: "evolution", file: "docs/evolution.md", title: "Governed evolution", group: "Model" },
@@ -35,6 +36,10 @@ const RFCS = [
   { slug: "0002-conversation", file: "rfcs/0002-conversation-is-the-computation.md", title: "RFC-0002 · The conversation is the computation" },
   { slug: "0003-substrates", file: "rfcs/0003-pluggable-substrates.md", title: "RFC-0003 · Pluggable substrates" },
   { slug: "0004-evidence", file: "rfcs/0004-evidence-protocol.md", title: "RFC-0004 · Evidence protocol" },
+  { slug: "0005-binary-wire", file: "rfcs/0005-binary-wire-codec.md", title: "RFC-0005 · Binary Colloq Wire codec" },
+  { slug: "0006-identity-lifecycle", file: "rfcs/0006-identity-lifecycle.md", title: "RFC-0006 · Identity rotation and revocation" },
+  { slug: "0007-graph-transactions", file: "rfcs/0007-graph-transactions.md", title: "RFC-0007 · Typed composite graph transactions" },
+  { slug: "0008-evolution-loop", file: "rfcs/0008-evolution-loop.md", title: "RFC-0008 · The governed evolution loop" },
 ];
 
 const WRITING = [
@@ -427,7 +432,7 @@ write(
     canonical: "https://colloq.dev/rfcs/",
     body: `<article class="prose">
         <h1>RFCs</h1>
-        <p class="lead">Every load-bearing decision is written down before it is built, with the alternatives and the reason for the choice.</p>
+        <p class="lead">Every load-bearing decision is written down before it is built, with the alternatives and the reason for the choice. A Draft is an open argument, not a plan of record: RFC-0005 to RFC-0008 are proposals with unresolved questions, and each has a <a href="https://github.com/Vantar-AI/colloq/discussions">discussion thread</a>.</p>
         <ul class="index-list">
           ${RFCS.map((r) => `<li><a href="/rfcs/${r.slug}/"><strong>${r.title}</strong></a></li>`).join("\n          ")}
         </ul>
