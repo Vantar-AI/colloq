@@ -119,3 +119,9 @@ misinterpreting bytes. Older plans keep working untouched.
 - Are varints worth it for a protocol whose transition IDs are small and dense, or is a
   fixed `u16` simpler and faster?
 - Should the preface negotiate the best mutually supported encoding instead of failing?
+
+## Which claim this advances
+
+**Regeneration evaluated against stability** moves from *no* toward *partly*: it turns the wire cost of a checked contract into a published number with a pre-registered gate, so the price of safety stops being a guess. See [the goal](../docs/regeneration.md) for the full scoreboard. The core does not
+change: this work exists to make the conversation and its identity stronger, not to add a
+second direction.
