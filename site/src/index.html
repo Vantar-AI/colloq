@@ -198,6 +198,59 @@ plan         <span class="c-id">sha256:016d5975…</span>
       </div>
     </section>
 
+    <section class="section section-dark">
+      <div class="wrap">
+        <p class="kicker">Why it exists</p>
+        <h2>Programs that change while they run.</h2>
+        <p class="section-lede">
+          The systems Colloq targets will not be written only by people. Models and
+          evolutionary search already propose changes to routing, placement and whole
+          subgraphs. That is the reason the conversation is typed and content addressed:
+          machine-authored change needs a substrate where meaning is checkable, not a pile
+          of text files where a rename looks like a rewrite.
+        </p>
+        <div class="card-row">
+          <article class="card contained">
+            <span class="tag tag_size_large">The graph is the program</span>
+            <h3>Edit structure, not text</h3>
+            <p>
+              The source of truth is a typed, content-addressed graph. Text and visual
+              editors are projections of it. A generator issues typed transactions and
+              fills typed holes, so formatting and names never change the meaning.
+            </p>
+          </article>
+          <article class="card contained">
+            <span class="tag tag_size_large">Evolution as a transaction</span>
+            <h3>Propose, gate, canary, keep or revert</h3>
+            <p>
+              A candidate passes type and effect checks, then capability and budget
+              checks, then bounded evaluation, then a policy decision, then a canary
+              rollout. Promotion and rollback are steps, not incidents.
+            </p>
+          </article>
+          <article class="card contained">
+            <span class="tag tag_size_large">Authority never inherits</span>
+            <h3>A child gets no rights by birth</h3>
+            <p>
+              A candidate cannot acquire a capability because its parent had one. Lineage
+              is immutable, gates cannot be written by the candidate itself, and some
+              invariants stay outside the region a generator may edit.
+            </p>
+          </article>
+        </div>
+        <p class="note" style="margin-top: 1.75rem">
+          None of this is finished. Phase 4 of the roadmap is where a system discovers and
+          safely deploys an improvement while an authority-expanding candidate is rejected.
+          The parts that exist today are the typed graph, the content identity, the draft
+          gate and the checks.
+        </p>
+        <p style="margin-top: 1.5rem">
+          <a class="button default medium" href="/docs/vision/">Read the vision</a>
+          <a class="button outlined medium" href="/docs/evolution/" style="margin-left: 0.5rem">Governed evolution</a>
+        </p>
+      </div>
+    </section>
+
     <section class="section section-subdued section-tight">
       <div class="wrap">
         <p class="kicker">Extensions</p>
@@ -212,7 +265,7 @@ plan         <span class="c-id">sha256:016d5975…</span>
       </div>
     </section>
 
-    <section class="section section-dark">
+    <section class="section">
       <div class="wrap">
         <p class="kicker">Evidence</p>
         <h2>Every number here is reproducible.</h2>

@@ -202,9 +202,9 @@
    These few values give Colloq its own identity inside that system.
    --------------------------------------------------------------------- */
 :root {
-  --u-color_interactive: var(--color-teal-0);
-  --u-color_interactive_hovered: var(--color-teal-1);
-  --u-color_text-on-action-subdued: var(--color-teal-0);
-  --u-color_caret: var(--color-teal-1);
-  --u-color_focus-border: var(--color-teal-1);
+  --u-color_interactive: var(--color-purple-1);
+  --u-color_interactive_hovered: var(--color-purple-2);
+  --u-color_text-on-action-subdued: var(--color-purple-1);
+  --u-color_caret: var(--color-purple-2);
+  --u-color_focus-border: var(--color-purple-3);
 }
