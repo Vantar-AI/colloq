@@ -1,0 +1,12 @@
+# Every change needs a review from the maintainers.
+*                       @0xShortx
+
+# Semantics: these decide what Colloq means, so they need extra care.
+/rfcs/                  @0xShortx
+/spec/                  @0xShortx
+/src/lib.rs             @0xShortx
+/src/plan.rs            @0xShortx
+/src/runtime.rs         @0xShortx
+/src/runtime/           @0xShortx
+/src/node.rs            @0xShortx
+/.github/workflows/     @0xShortx

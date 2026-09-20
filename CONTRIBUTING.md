@@ -27,6 +27,24 @@ Syntax without semantics is considered a sketch, not a language proposal.
 
 Changes to portable semantics should use the [RFC process](rfcs/README.md). RFC-0001 establishes the current graph-native direction but remains a Draft that implementation evidence may revise.
 
+## How a change reaches main
+
+`main` is protected by a ruleset. Nobody pushes to it, including the maintainers.
+
+1. Work on a branch and open a pull request. Draft is fine, and preferred while the design
+   is still moving.
+2. These checks must pass before merge: formatting, clippy with `-D warnings`, the release
+   build, the schema and artifact validation, the Linux test matrix on the minimum
+   supported Rust version and on stable, and the two-node Iroh smoke test.
+   The macOS jobs run and are visible, but they are not required, because their network
+   tests are still occasionally flaky under a starved runner.
+3. Review conversations must be resolved before merge.
+4. Merges are squash merges, so the history stays linear. Force pushes to `main` and
+   deleting `main` are blocked.
+
+A pull request that changes what Colloq *means*, rather than how it is implemented, needs
+an RFC. A pull request that makes a performance claim needs a report, not a sentence.
+
 ## Documentation style
 
 - Distinguish current behavior from proposed behavior.
