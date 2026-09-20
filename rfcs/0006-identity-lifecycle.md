@@ -118,3 +118,9 @@ Nothing in the conversation, the plan or the wire changes.
   revoking the legitimate one?
 - Should `retiring` be a separate state, or is a deadline on the identity enough?
 - Where does the overlap window live: in the principal artifact, or in local policy?
+
+## Which claim this advances
+
+**Provenance replaces version control** moves: an identity that can rotate and be revoked is the difference between a content-addressed toy and something that can hold a real key over years. See [the goal](../docs/regeneration.md) for the full scoreboard. The core does not
+change: this work exists to make the conversation and its identity stronger, not to add a
+second direction.
