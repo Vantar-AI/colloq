@@ -117,3 +117,9 @@ readable by the current reader.
   it cannot yet fill?
 - Is `intent` free text, or a small enumeration plus free text, so a gate can route
   proposals by kind?
+
+## Which claim this advances
+
+**Agents as first-class developers** moves from *partly* toward *yes*: an agent proposes typed structure with a stated intent instead of characters, and a gate can read what was intended. See [the goal](../docs/regeneration.md) for the full scoreboard. The core does not
+change: this work exists to make the conversation and its identity stronger, not to add a
+second direction.
