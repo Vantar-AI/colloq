@@ -129,17 +129,48 @@ plan         <span class="c-id">sha256:016d5975…</span>
 
     <section class="section section-subdued">
       <div class="wrap">
-        <p class="kicker">How it works</p>
-        <h2>Write the agreement once.<br />The compiler splits it.</h2>
+        <p class="kicker">The old way, the new way</p>
+        <h2>Same exchange. One file instead of four.</h2>
         <p class="section-lede">
-          A conversation names the roles, the messages between them, the choices, the
-          loops, the cancellation and the failures. The compiler derives one local state
-          machine per role, so two servers cannot disagree about the protocol.
+          A gateway asks a router for an answer within 20 ms, and the router replies from
+          cache, from a model, or hands the case to a person. Here is where that agreement
+          lives today, and where it lives in Colloq.
         </p>
-        <div class="split">
-          <figure class="code-card">
-            <figcaption>route.colloq</figcaption>
-            <pre><code><span class="k">conversation</span> <span class="t">Route</span>(request: <span class="t">Request</span>) {
+
+        <div class="compare">
+          <div class="compare-col">
+            <p class="compare-label">The usual way</p>
+            <figure class="code-card">
+              <figcaption>4 files, 3 languages, 2 teams</figcaption>
+              <pre><code><span class="cmt"># route.proto — the shape, but not the order</span>
+service Router {
+  rpc Route(Request) returns (Answer);
+}
+
+<span class="cmt"># client.py — deadline and retry, written here</span>
+resp = stub.Route(req, timeout=0.02)
+<span class="cmt"># is a retry safe? the proto does not say</span>
+
+<span class="cmt"># server.py — the branches, written again</span>
+if cached: return Answer(kind="cached", ...)
+if score &gt; 0.9: return Answer(kind="infer", ...)
+return Answer(kind="review", ...)
+
+<span class="cmt"># handler.py — "review" handled? nobody checks</span></code></pre>
+            </figure>
+            <ul class="compare-list">
+              <li>The order of messages lives in two handwritten files.</li>
+              <li>A new branch compiles on one side and crashes on the other.</li>
+              <li>Timeouts and cancellation are convention, not type.</li>
+              <li>Nothing tells you the two sides still agree.</li>
+            </ul>
+          </div>
+
+          <div class="compare-col">
+            <p class="compare-label">With Colloq</p>
+            <figure class="code-card">
+              <figcaption>route.colloq — one file, both sides</figcaption>
+              <pre><code><span class="k">conversation</span> <span class="t">Route</span>(request: <span class="t">Request</span>) {
     <span class="k">roles</span> gateway, router
 
     gateway -&gt; router: request <span class="k">within</span> 20ms
@@ -149,6 +180,64 @@ plan         <span class="c-id">sha256:016d5975…</span>
         infer  { router -&gt; gateway: <span class="t">ModelAnswer</span>;  <span class="k">end</span> }
         review { router -&gt; gateway: <span class="t">ReviewTicket</span>; <span class="k">end</span> }
     }
+
+    <span class="k">on</span> transport.timeout -&gt; timed-out
+}</code></pre>
+            </figure>
+            <ul class="compare-list">
+              <li>The order is the program. Each side is derived from it.</li>
+              <li>A new branch changes the plan identity, so a stale peer is refused.</li>
+              <li>The deadline and the failure are part of the type.</li>
+              <li>Both peers compare identities before the first frame.</li>
+            </ul>
+          </div>
+        </div>
+
+        <table class="compare-table">
+          <thead>
+            <tr><th>Concern</th><th>The usual way</th><th>Colloq</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Where the protocol lives</td><td>A schema file, plus both implementations</td><td>One conversation</td></tr>
+            <tr><td>Who checks the order</td><td>Nobody, until production</td><td>The checker, before you run it</td></tr>
+            <tr><td>Timeout and cancellation</td><td>Client convention</td><td>Declared transitions</td></tr>
+            <tr><td>Failure handling</td><td>Generic exception per service</td><td>A declared state per failure</td></tr>
+            <tr><td>Detecting a change</td><td>Version numbers and hope</td><td>Content identity, refused on mismatch</td></tr>
+            <tr><td>Changing transport</td><td>Rewrite the plumbing</td><td>Run the same plan on another transport</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="wrap">
+        <p class="kicker">How it works</p>
+        <h2>Write the agreement once.<br />The compiler splits it.</h2>
+        <p class="section-lede">
+          From that one file, the compiler derives a local state machine for each role.
+          Nobody writes this: the router's machine below comes out of
+          <code class="inline-code">colloq project</code>, and the gateway gets the exact
+          mirror of it. Two servers cannot disagree about a protocol neither of them wrote.
+        </p>
+        <div class="split">
+          <figure class="code-card">
+            <figcaption>build/endpoints/router.colloqendpoint.json — derived, not written</figcaption>
+            <pre><code>{
+  <span class="t">"colloq_endpoint"</span>: "0.1.0",
+  <span class="t">"conversation"</span>: "example.route",
+  <span class="t">"role"</span>: "router",
+  <span class="t">"states"</span>: [
+    { <span class="t">"op"</span>: <span class="k">"receive"</span>, "id": "start",
+      "from": "gateway", "message": "request",
+      "deadline": "20ms", "next": "route",
+      "on_failure": { "transport.timeout": "timed-out", … } },
+
+    { <span class="t">"op"</span>: <span class="k">"select"</span>, "id": "route",
+      "branches": { "cached": "reply-cached",
+                    "infer":  "reply-infer",
+                    "review": "reply-review" } },
+    …
+  ]
 }</code></pre>
           </figure>
           <ul class="facts">
