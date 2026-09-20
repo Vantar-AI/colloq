@@ -36,3 +36,4 @@ The implementation may evolve quickly. Accepted semantics require a conformance 
 | [0002](0002-conversation-is-the-computation.md) | Draft | The conversation is the computation |
 | [0003](0003-pluggable-substrates.md) | Experimental | Pluggable collaboration, connectivity, and deployment substrates |
 | [0004](0004-evidence-protocol.md) | Experimental | Colloq evidence protocol |
+| [0006](0006-identity-lifecycle.md) | Draft | Identity rotation and revocation |
