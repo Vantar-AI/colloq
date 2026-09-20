@@ -39,3 +39,4 @@ The implementation may evolve quickly. Accepted semantics require a conformance 
 | [0005](0005-binary-wire-codec.md) | Draft | Binary Colloq Wire codec |
 | [0006](0006-identity-lifecycle.md) | Draft | Identity rotation and revocation |
 | [0007](0007-graph-transactions.md) | Draft | Typed composite graph transactions |
+| [0008](0008-evolution-loop.md) | Draft | The governed evolution loop |
