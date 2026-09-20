@@ -37,6 +37,30 @@ const RFCS = [
   { slug: "0004-evidence", file: "rfcs/0004-evidence-protocol.md", title: "RFC-0004 · Evidence protocol" },
 ];
 
+const WRITING = [
+  {
+    slug: "telling-computers-what-to-do",
+    title: "How we told computers what to do",
+    date: "2026-09-20",
+    summary:
+      "Seventy years of raising the level at which we instruct machines, and the one thing that got harder every single time.",
+  },
+  {
+    slug: "the-agreement-never-moved",
+    title: "Thirty years of making two computers agree",
+    date: "2026-09-20",
+    summary:
+      "RPC, IDLs, REST and gRPC each formalised a bit more of the shape and left the order of the exchange to prose. That is where the bugs live.",
+  },
+  {
+    slug: "code-you-expect-to-throw-away",
+    title: "Writing code you expect to throw away",
+    date: "2026-09-20",
+    summary:
+      "If a component can be regenerated cheaply, the decisions inside it are sediment, not an asset. Four things are worth keeping instead.",
+  },
+];
+
 const SCHEMAS = [
   ["colloq-conversation-v0", "Conversation", "The global conversation: roles, messages, choices, loops, cancellation and declared failures. This is the file you write."],
   ["colloq-plan-v0", "Plan", "The compiled artifact: conversation identity, plan identity, one endpoint graph per role and the compact transition table."],
@@ -124,6 +148,7 @@ function shell({ title, description, body, nav = "", activeTop = "", canonical, 
     ["/docs/", "Docs", "docs"],
     ["/spec/", "Spec", "spec"],
     ["/rfcs/", "RFCs", "rfcs"],
+    ["/writing/", "Writing", "writing"],
     ["/about/", "About", "about"],
   ]
     .map(([href, label, key]) =>
@@ -305,6 +330,61 @@ write(
   }),
 );
 
+// Writing.
+for (const post of WRITING) {
+  const md = fs.readFileSync(path.join(here, "src", "writing", `${post.slug}.md`), "utf8");
+  const nice = new Date(post.date).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+  write(
+    `writing/${post.slug}`,
+    shell({
+      title: `${post.title} — Colloq`,
+      description: post.summary,
+      canonical: `https://colloq.dev/writing/${post.slug}/`,
+      wide: true,
+      body: `<article class="prose essay">
+        <p class="kicker"><a href="/writing/">Writing</a> · <time datetime="${post.date}">${nice}</time></p>
+${rewriteLinks(marked.parse(md))}
+        <p class="essay-foot">
+          Colloq is an open-source language for the typed conversation between servers.
+          <a href="/docs/quickstart/">Try it in ten minutes</a>, or read
+          <a href="/about/">why it exists</a>.
+        </p>
+      </article>`,
+      activeTop: "writing",
+    }),
+  );
+}
+
+write(
+  "writing",
+  shell({
+    title: "Writing — Colloq",
+    description:
+      "Essays on how we instruct machines, how two programs agree, and what to keep when code becomes disposable.",
+    canonical: "https://colloq.dev/writing/",
+    wide: true,
+    body: `<article class="prose">
+        <h1>Writing</h1>
+        <p class="lead">Longer arguments that did not fit in the documentation. Mostly about the gap between telling a machine what to do and knowing that it did it.</p>
+        <ul class="post-list">
+          ${WRITING.map(
+            (post) => `<li>
+            <a href="/writing/${post.slug}/">
+              <strong>${post.title}</strong>
+              <span class="post-summary">${post.summary}</span>
+            </a>
+          </li>`,
+          ).join("\n          ")}
+        </ul>
+      </article>`,
+    activeTop: "writing",
+  }),
+);
+
 // About page.
 {
   const md = fs.readFileSync(path.join(here, "src", "about.md"), "utf8");
@@ -455,6 +535,8 @@ const urls = [
   ...DOCS.map((d) => `/docs/${d.slug}/`),
   "/rfcs/",
   ...RFCS.map((r) => `/rfcs/${r.slug}/`),
+  "/writing/",
+  ...WRITING.map((w) => `/writing/${w.slug}/`),
   "/spec/",
 ];
 fs.writeFileSync(
