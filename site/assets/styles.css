@@ -84,6 +84,9 @@ a {
   border-bottom: 1px solid var(--u-color_divider);
 }
 .topbar-marketing {
+  /* Not sticky: the marketing header is transparent, so a sticky one would
+     let the hero terminal scroll underneath it and show through. */
+  position: relative;
   background: transparent;
   border-bottom: none;
   max-width: var(--shell-max);
