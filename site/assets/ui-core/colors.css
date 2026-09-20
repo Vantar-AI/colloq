@@ -1,0 +1,95 @@
+:root {
+  /* `transparent` sometimes renders as a dark shade when used
+   * in gradients in some browsers.  Having a variable based
+   * on rgba fixes this and makes it convienient to use
+   * everywhere.
+   * https://stackoverflow.com/a/56548711
+   *
+   * TODO: Just use RGB instead of HEX
+   * https://stackoverflow.com/a/41265350
+   */
+  --color-transparent: rgba(255, 255, 255, 0);
+  --color-gray-0-20pct: rgba(24, 24, 28, 0.2);
+  --color-gray-0-50pct: rgba(24, 24, 28, 0.5);
+  --color-gray-1-transparent: rgba(45, 46, 53, 0);
+  --color-gray-1-20pct: rgba(45, 46, 53, 0.2);
+  --color-gray-2-transparent: rgba(65, 66, 75, 0);
+  --color-gray-11-50pct: rgba(255, 255, 255, 0.5);
+  --color-gray-10-50pct: rgba(250, 250, 251, 0.5);
+  --color-gray-10-25pct: rgba(250, 250, 251, 0.25);
+
+  /* Grays */
+  --color-gray-0_: 24, 24, 28;
+  --color-gray-0: rgba(var(--color-gray-0_, 1));
+  --color-gray-1: #22232a;
+  --color-gray-2: #2d2e35;
+
+  --color-gray-3: #515258;
+
+  --color-gray-4: #818286;
+  --color-gray-5: #bdbfc6;
+  --color-gray-6: #d1d5dc;
+  --color-gray-7: #d9e0e7;
+  --color-gray-8: #e4eaf3;
+  --color-gray-9: #f1f3f5;
+  --color-gray-10: #fafafb;
+  --color-gray-11: #ffffff;
+
+  /* Pinks */
+  --color-pink-0: #e51022;
+  --color-pink-0-25pct: rgba(229, 16, 34, 0.25);
+  --color-pink-1: #ff4756;
+  --color-pink-1-25pct: rgba(255, 71, 86, 0.25);
+  --color-pink-2: #ff6c78;
+  --color-pink-3: #ff9ba3;
+  --color-pink-4: #ffc1c6;
+  --color-pink-5: #feeef0;
+
+  /* Greens */
+  --color-green-0: #10733a;
+  --color-green-1: #27ae60;
+  --color-green-2: #52d188;
+  --color-green-3: #88f3b5;
+  --color-green-4: #c6ffde;
+  --color-green-5: #e8f8ef;
+
+  /* Teals */
+  --color-teal-0: #0b8076;
+  --color-teal-1: #22beb1;
+  --color-teal-2: #55f4e7;
+  --color-teal-3: #9efff7;
+  --color-teal-4: #9efff7;
+  --color-teal-5: #e7fffd;
+
+  /* Blues */
+  --color-blue-0: #0b3880;
+  --color-blue-0-25pct: rgba(11, 56, 128, 0.25);
+  --color-blue-1: #225ebe;
+  --color-blue-1-25pct: rgba(34, 94, 190, 0.25);
+  --color-blue-2: #5695f4;
+  --color-blue-2-25pct: rgba(85, 149, 255, 0.25);
+  --color-blue-3: #9ec5ff;
+  --color-blue-3-25pct: rgba(158, 197, 255, 0.25);
+  --color-blue-4: #cbe0ff;
+  --color-blue-4-25pct: rgba(203, 224, 255, 0.25);
+  --color-blue-5: #ecf2fa;
+  --color-blue-5-25pct: rgba(236, 242, 250, 0.25);
+
+  /* Oranges */
+  --color-orange-0: #b87120;
+  --color-orange-1: #ff8800;
+  --color-orange-2: #ffc41f;
+  --color-orange-3: #ffe08b;
+  --color-orange-4: #ffeebe;
+  --color-orange-5: #fff7df;
+
+  /* Purples */
+  /* TODO: SHIFT THESE, 1 should be 0, 2 should be 1 etc.. */
+  --color-purple-1: #55377b;
+  --color-purple-2: #734da3;
+  --color-purple-3: #9a76c8;
+  --color-purple-3-25pct: rgba(198, 168, 236, 0.25);
+  --color-purple-4: #c6a8ec;
+  --color-purple-5: #e2ccfd;
+  --color-purple-6: #f1e5ff;
+}

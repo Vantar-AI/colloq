@@ -1,0 +1,123 @@
+:root {
+  --line-height-base: 1.4;
+  --size-base: 16px;
+  --app-header-height: 3.5rem;
+  --page-hero-height: 16rem;
+  --border-radius-base: 0.25rem;
+  /* Good size for avoiding long lines and for fitting the width we render code
+   * at (80 char) for a 14px font size.
+   *
+   * `1ch` is roughly half of the font size, 14px -> 7px, 16 -> 8px, thus to get
+   * roughly 80 chars for 14px, the width becomes 560px, but `1ch` is based on
+   * the `0` characters width in the font, and except for code, fonts aren't
+   * monospaced, so we add a bit extra sizing: 688px/43rem (~23% buffer), which
+   * ends up being around 80-90 characters in a line.
+   * */
+  --readable-column-width-medium: 43rem;
+  /* For 16px, the base is 640px (80*(16/2)), with the added buffer of ~23%
+   * (and rounded), we get 784px/49rem;
+   */
+  --readable-column-width-base: 49rem;
+
+  --c-width_sidebar_regular: 17rem;
+  --c-width_sidebar_narrow: 4.5rem;
+  --c-width_sidebar_full: 100vw;
+
+  /* -- Layers ------------------------------------------------------------- */
+  --layer-beneath: 0;
+  --layer-base: 1;
+  /* "floating-controls" are things like the collapsed Sidebar, an X in a
+   * TextField or on a WorkspaceItem */
+  --layer-floating-controls: 25;
+  --layer-popover: 50;
+  --layer-tooltip: 75;
+  --layer-modal-overlay: 99;
+  --layer-modal: 100;
+  --layer-modal-above: 110;
+
+  /* -- Font --------------------------------------------------------------- */
+  --font-sans-serif: "Inter var", sans-serif;
+  --font-monospace: "Fira Code var", monospace;
+
+  --font-size-base: 1rem;
+  --font-size-extra-large: 2rem;
+  --font-size-large: 1.5rem;
+  --font-size-medium: 0.875rem;
+  --font-size-small: 0.75rem;
+  --font-size-extra-small: 0.625rem;
+
+  /* -- Viewport sizes ----------------------------------------------------- */
+  /* See ui/viewport.css for more */
+  --u-viewport_sm: 544px;
+  --u-viewport_md: 768px;
+  --u-viewport_lg: 1012px;
+  --u-viewport_xl: 1280px;
+}
+
+.min-xl,
+.max-xl,
+.min-lg,
+.max-lg,
+.min-md,
+.max-md,
+.min-sm,
+.max-sm {
+  display: none;
+  pointer-events: none;
+}
+
+@media only screen and (--u-viewport_min-xl) {
+  .min-xl {
+    display: inherit;
+    pointer-events: initial;
+  }
+}
+
+@media only screen and (--u-viewport_max-xl) {
+  .max-xl {
+    display: inherit;
+    pointer-events: initial;
+  }
+}
+
+@media only screen and (--u-viewport_min-lg) {
+  .min-lg {
+    display: inherit;
+    pointer-events: initial;
+  }
+}
+
+@media only screen and (--u-viewport_max-lg) {
+  .max-lg {
+    display: inherit;
+    pointer-events: initial;
+  }
+}
+
+@media only screen and (--u-viewport_min-md) {
+  .min-md {
+    display: inherit;
+    pointer-events: initial;
+  }
+}
+
+@media only screen and (--u-viewport_max-md) {
+  .max-md {
+    display: inherit;
+    pointer-events: initial;
+  }
+}
+
+@media only screen and (--u-viewport_min-sm) {
+  .min-sm {
+    display: inherit;
+    pointer-events: initial;
+  }
+}
+
+@media only screen and (--u-viewport_max-sm) {
+  .max-sm {
+    display: inherit;
+    pointer-events: initial;
+  }
+}

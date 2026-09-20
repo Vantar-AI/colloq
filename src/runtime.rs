@@ -1327,8 +1327,10 @@ async fn read_quic_close_marker(receive: &mut quinn::RecvStream) -> Result<(), S
 fn quic_transport_config() -> Result<Arc<quinn::TransportConfig>, RuntimeError> {
     let mut config = quinn::TransportConfig::default();
     config.keep_alive_interval(Some(Duration::from_secs(1)));
+    // 10 minutes. A starved CI runner can leave one side unscheduled for minutes,
+    // and a dead peer is still caught: the job timeout is shorter than this.
     config.max_idle_timeout(Some(
-        quinn::IdleTimeout::try_from(Duration::from_secs(120))
+        quinn::IdleTimeout::try_from(Duration::from_secs(600))
             .map_err(|error| RuntimeError::Quic(error.to_string()))?,
     ));
     Ok(Arc::new(config))

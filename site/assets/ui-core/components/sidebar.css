@@ -1,0 +1,314 @@
+.sidebar {
+  /* Sidebar width is typically set on a page
+   * layout level as it is directly used in
+   * the CSS Grid */
+  --c-width_sidebar_fallback: 17rem;
+
+  /* @color-todo @inverse */
+  --color-sidebar-fg: var(--color-gray-6);
+  --color-sidebar-fg-em: var(--color-gray-11);
+  --color-sidebar-bg: var(--color-gray-1);
+  /* see color files for why this is needed */
+  --color-sidebar-bg-transparent: var(--color-gray-1-transparent);
+  --color-sidebar-border: var(--color-gray-3);
+  --color-sidebar-subtle-fg: var(--color-gray-4);
+  --color-sidebar-subtle-fg-em: var(--color-gray-5);
+  --color-sidebar-subtle-bg: var(--color-transparent);
+  --color-sidebar-focus-fg: var(--color-gray-10);
+  --color-sidebar-focus-bg: var(--color-gray-2);
+  --color-sidebar-button-default-text: var(--color-gray-5);
+  --color-sidebar-button-default-icon: var(--color-gray-4);
+  --color-sidebar-button-default-icon-only: var(--color-gray-5);
+  --color-sidebar-button-default-bg: var(--color-gray-3);
+  --color-sidebar-button-default-hover-text: var(--color-gray-8);
+  --color-sidebar-button-default-hover-icon: var(--color-gray-5);
+  --color-sidebar-button-default-hover-icon-only: var(--color-gray-8);
+  --color-sidebar-button-default-hover-bg: var(--color-gray-3);
+  --color-sidebar-divider: var(--color-gray-2);
+
+  --color-sidebar-tooltip-fg: var(--color-gray-10);
+  --color-sidebar-tooltip-bg: var(--color-gray-2);
+  --color-sidebar-tooltip-border: var(--color-gray-3);
+
+  --color-sidebar-keyboard-shortcut-key-text: var(--color-gray-5);
+  --color-sidebar-keyboard-shortcut-key-bg: var(--color-gray-2);
+  --color-sidebar-keyboard-shortcut-key-border: var(--color-gray-4);
+  --color-sidebar-keyboard-shortcut-key-shadow: var(--color-gray-3);
+
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: clip;
+  background: var(--color-sidebar-bg);
+  color: var(--color-sidebar-fg);
+  border-right: 1px solid var(--color-sidebar-border);
+  box-shadow: 0 -1px 0 var(--color-sidebar-border);
+  font-size: var(--font-size-medium);
+  z-index: var(--layer-floating-controls);
+
+  /* max-width: 100% avoids horizontal scroll when with is set to 100vw as it
+   * is on small screens */
+  width: var(--c-width_sidebar, var(--c-width_sidebar_fallback));
+  max-width: 100%;
+
+  --u-color_text: var(--color-sidebar-fg);
+  --u-color_text_subdued: var(--color-sidebar-subtle-fg);
+  --u-color_interactive: var(--color-blue-2);
+  --u-color_interactive_hovered: var(--color-blue-3);
+
+  --u-color_divider: var(--color-sidebar-divider);
+
+  transition: all 0.2s ease-in-out;
+}
+
+.sidebar .tooltip {
+  --color-tooltip-text: var(--color-sidebar-tooltip-fg);
+  --color-tooltip-bg: var(--color-sidebar-tooltip-bg);
+  --color-tooltip-border: var(--color-sidebar-tooltip-border);
+}
+
+.sidebar .keyboard-shortcut {
+  --color-keyboard-shortcut-key-text: var(
+    --color-sidebar-keyboard-shortcut-key-text
+  );
+  --color-keyboard-shortcut-key-bg: var(
+    --color-sidebar-keyboard-shortcut-key-bg
+  );
+  --color-keyboard-shortcut-key-border: var(
+    --color-sidebar-keyboard-shortcut-key-border
+  );
+  --color-keyboard-shortcut-key-shadow: var(
+    --color-sidebar-keyboard-shortcut-key-shadow
+  );
+}
+
+.sidebar .button {
+  --color-button-default-text: var(--color-sidebar-button-default-text);
+  --color-button-default-icon: var(--color-sidebar-button-default-icon);
+  --color-button-default-icon-only: var(
+    --color-sidebar-button-default-icon-only
+  );
+  --color-button-default-bg: var(--color-sidebar-button-default-bg);
+  --color-button-default-hover-text: var(
+    --color-sidebar-button-default-hover-text
+  );
+  --color-button-default-hover-icon: var(
+    --color-sidebar-button-default-hover-icon
+  );
+  --color-button-default-hover-icon-only: var(
+    --color-sidebar-button-default-hover-icon-only
+  );
+  --color-button-default-hover-bg: var(--color-sidebar-button-default-hover-bg);
+}
+
+.sidebar a:hover {
+  text-decoration: none;
+}
+
+.sidebar .loading-placeholder {
+  /* @color-todo improve... */
+  background: var(--color-gray-2);
+  opacity: 1.5;
+}
+
+.sidebar .sidebar-section {
+  margin-top: 1.5rem;
+}
+
+.sidebar .sidebar-section .sidebar-section_header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  line-height: 1;
+  margin-bottom: 1rem;
+  padding: 0rem 1rem 0 1.5rem;
+  background: var(--color-sidebar-bg);
+}
+
+.sidebar
+  .sidebar-section
+  .sidebar-section_header.sidebar-section_header_sticky {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.sidebar .sidebar-section_title {
+  font-size: var(--font-size-medium);
+  font-weight: normal;
+  color: var(--color-sidebar-subtle-fg);
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  height: 1.875rem;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.sidebar .sidebar-section .sidebar-section_content {
+  padding: 0rem 1rem 1rem 1.5rem;
+}
+
+.sidebar .sidebar-section.sidebar-section_scrollable {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-sidebar-subtle-fg) var(--color-sidebar-bg);
+  margin-bottom: 4.5rem;
+}
+
+.sidebar .sidebar-section::-webkit-scrollbar {
+  width: 0.4rem;
+  height: 0.4rem;
+}
+
+.sidebar .sidebar-section::-webkit-scrollbar-track {
+  background: var(--color-sidebar-bg);
+}
+
+.sidebar .sidebar-section::-webkit-scrollbar-thumb {
+  background-color: var(--color-sidebar-subtle-fg);
+  border-radius: 0.2rem;
+}
+
+.sidebar .sidebar-menu-item {
+  margin-left: -0.5rem;
+  display: flex;
+  flex-direction: row;
+  user-select: none;
+  align-items: center;
+  border-radius: var(--border-radius-base);
+  padding-left: 0.5rem;
+  margin-bottom: 0.125rem;
+  height: 1.875rem;
+}
+
+.sidebar .sidebar-menu-item label {
+  color: var(--color-sidebar-fg);
+  transition: all 0.2s;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.875;
+}
+
+.sidebar .sidebar-menu-item:hover {
+  background: var(--color-sidebar-focus-bg);
+  text-decoration: none;
+}
+
+.sidebar .divider {
+  margin: 0;
+}
+
+.sidebar .sidebar-header {
+  width: var(--c-width_sidebar, var(--c-width_sidebar_fallback));
+  padding: 1.5rem 1.5rem 0 1.5rem;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  gap: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.sidebar .sidebar-header:after {
+  position: absolute;
+  left: 1.5rem;
+  right: 1.5rem;
+  bottom: -2rem;
+  height: 1.75rem;
+  content: "";
+  background: linear-gradient(
+    var(--color-sidebar-bg),
+    var(--color-sidebar-bg),
+    var(--color-sidebar-bg-transparent)
+  );
+}
+
+.sidebar .sidebar-header-item {
+  display: flex;
+  flex: 1;
+  flex-direction: row;
+  user-select: none;
+  align-items: center;
+  border-radius: var(--border-radius-base);
+  gap: 0.75rem;
+}
+
+.sidebar .sidebar-header-item .button:not(.content-icon) {
+  width: 100%;
+}
+
+.sidebar .sidebar-footer {
+  width: var(--c-width_sidebar, var(--c-width_sidebar_fallback));
+  margin-top: auto;
+  padding: 1.5rem 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  justify-self: flex-end;
+  position: fixed;
+  bottom: 0;
+  height: 4.5rem;
+}
+
+.sidebar .sidebar-toggle .tooltip-bubble {
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+.sidebar .sidebar-toggle_collapse .tooltip-bubble {
+  /* @todo fix tooltips so we can better automatically position them*/
+  left: calc(var(--c-width_sidebar) - 8.5rem);
+}
+
+.sidebar .sidebar-toggle_expand .tooltip-bubble {
+  /* @todo fix tooltips so we can better automatically position them*/
+  left: calc(var(--c-width_sidebar) - 2rem);
+}
+
+.sidebar .sidebar-toggle_tooltip {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  width: 10.5rem;
+}
+
+.sidebar .sidebar-toggle_collapse .tooltip-bubble .sidebar-toggle_tooltip {
+  width: auto;
+}
+
+.sidebar .sidebar_expanded {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  position: relative;
+  overflow-y: auto;
+  overflow-x: clip;
+}
+
+.sidebar .sidebar_collapsed {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  align-items: center;
+  background: var(--color-sidebar-bg);
+  padding: 0.25rem;
+  white-space: nowrap;
+  transition: all 0.2s ease-in-out;
+}
+
+.sidebar .sidebar_collapsed:has(.sidebar_collapsed_context) {
+  padding-left: 0.5rem;
+}
+
+.sidebar .sidebar_collapsed .sidebar_collapsed_actions {
+  display: flex;
+  flex-direction: row;
+  gap: 0.25rem;
+}

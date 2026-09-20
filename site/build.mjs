@@ -108,7 +108,7 @@ function shell({ title, description, body, nav = "", activeTop = "", canonical, 
       <nav class="topnav" aria-label="Primary">
         ${top}
       </nav>
-      <a class="btn btn-quiet" href="https://github.com/Vantar-AI/colloq">GitHub</a>
+      <a class="button small outlined" href="https://github.com/Vantar-AI/colloq">GitHub</a>
     </header>
     <div class="layout">
       ${nav}
@@ -136,7 +136,7 @@ function sidebar(active, kind) {
     const items = RFCS.map(
       (r) => `<a href="/rfcs/${r.slug}/"${active === r.slug ? ' class="active"' : ""}>${r.title}</a>`,
     ).join("\n          ");
-    return `<aside class="sidebar">
+    return `<aside class="docs-sidebar">
         <p class="side-head">RFCs</p>
         <nav class="side-nav">
           ${items}
@@ -162,7 +162,7 @@ function sidebar(active, kind) {
         </nav>`,
     )
     .join("\n        ");
-  return `<aside class="sidebar">
+  return `<aside class="docs-sidebar">
         <p class="side-head">Docs</p>
         <nav class="side-nav">
           <a href="/docs/"${active === "index" ? ' class="active"' : ""}>Overview</a>
