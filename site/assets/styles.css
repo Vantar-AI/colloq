@@ -108,8 +108,10 @@ a {
   stroke-width: 2.1;
   stroke-linecap: round;
 }
+/* One node is filled, so the mark reads as a conversation with a speaker.
+   Monochrome on purpose: the mark takes the color of its surroundings. */
 .brand-mark circle:nth-child(2) {
-  fill: var(--color-teal-2);
+  fill: currentColor;
   stroke: currentColor;
 }
 
@@ -243,15 +245,15 @@ a {
 .section-lede a {
   color: var(--u-color_interactive);
   text-decoration: none;
-  border-bottom: 1px solid rgba(11, 128, 118, 0.3);
+  border-bottom: 1px solid rgba(85, 55, 123, 0.3);
 }
 .section-lede a:hover {
   border-bottom-color: var(--u-color_interactive);
 }
 .section-dark .section-lede a,
 .section-dark .note a {
-  color: var(--color-teal-2);
-  border-bottom-color: rgba(85, 244, 231, 0.35);
+  color: var(--color-purple-4);
+  border-bottom-color: rgba(198, 168, 236, 0.4);
 }
 .center {
   text-align: center;
@@ -357,7 +359,7 @@ a {
   color: var(--color-gray-4);
 }
 .c-prompt {
-  color: var(--color-teal-2);
+  color: var(--color-gray-5);
 }
 .c-ok {
   color: var(--color-green-2);
@@ -417,27 +419,53 @@ a {
 }
 .kpi {
   padding: 1.25rem 1.25rem 1.375rem;
-  border: 1px solid var(--color-gray-2);
-  border-radius: 0.5rem;
-  background: var(--color-gray-0);
+  border: 1px solid var(--u-color_border_subdued);
+  border-radius: var(--border-radius-base);
+  background: var(--u-color_container);
 }
 .kpi strong {
   display: block;
   font-size: 1.75rem;
   font-weight: 700;
   letter-spacing: -0.03em;
-  color: #fff;
+  color: var(--u-color_text_emphasized);
 }
 .kpi span {
   display: block;
   margin-top: 0.4rem;
   font-size: 0.875rem;
-  color: var(--color-gray-5);
+  color: var(--u-color_text_subdued);
 }
 .note {
   font-size: 0.9375rem;
-  color: var(--color-gray-5);
+  color: var(--u-color_text_subdued);
   max-width: 64ch;
+}
+.section-dark .kpi {
+  border-color: var(--color-gray-2);
+  background: var(--color-gray-0);
+}
+.section-dark .kpi strong {
+  color: #fff;
+}
+.section-dark .kpi span,
+.section-dark .note {
+  color: var(--color-gray-5);
+}
+.section-dark .card {
+  --color-card-bg: var(--color-gray-0);
+  --color-card-border: var(--color-gray-2);
+  --color-card-text: var(--color-gray-6);
+}
+.section-dark .card h3 {
+  color: #fff;
+}
+.section-dark .card p {
+  color: var(--color-gray-5);
+}
+.section-dark .tag {
+  --c-color_tag_bg: var(--color-gray-2);
+  --c-color_tag_text: var(--color-gray-6);
 }
 
 /* ---- marketing footer ---- */
@@ -600,7 +628,7 @@ body.app:not(.app-doc) .doc {
 .prose a {
   color: var(--u-color_interactive);
   text-decoration: none;
-  border-bottom: 1px solid rgba(11, 128, 118, 0.28);
+  border-bottom: 1px solid rgba(85, 55, 123, 0.3);
 }
 .prose a:hover {
   border-bottom-color: var(--u-color_interactive);
@@ -759,4 +787,13 @@ body.app:not(.app-doc) .doc {
   .section {
     padding: 3.75rem 0 3rem;
   }
+}
+
+/* ui-core's outlined button assumes a light surface. */
+.section-dark .button.outlined {
+  --color-button-outlined-text: var(--color-gray-8);
+  --color-button-outlined-border: rgba(255, 255, 255, 0.25);
+  --color-button-outlined-hover-text: #fff;
+  --color-button-outlined-hover-border: rgba(255, 255, 255, 0.5);
+  --color-button-outlined-hover-bg: rgba(255, 255, 255, 0.06);
 }

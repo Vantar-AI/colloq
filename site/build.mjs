@@ -13,6 +13,7 @@ const out = path.join(here, "dist");
 
 const DOCS = [
   { slug: "quickstart", file: null, title: "Quickstart", group: "Start" },
+  { slug: "vision", file: "docs/vision.md", title: "Vision", group: "Start" },
   { slug: "conversations", file: "docs/language.md", title: "The language surface", group: "Start" },
   { slug: "architecture", file: "docs/architecture.md", title: "Architecture", group: "Model" },
   { slug: "design", file: "docs/design.md", title: "Design principles", group: "Model" },
@@ -22,7 +23,7 @@ const DOCS = [
   { slug: "two-node", file: "docs/two-node.md", title: "Two-node runbook", group: "Running it" },
   { slug: "substrates", file: "docs/substrates.md", title: "Substrates", group: "Running it" },
   { slug: "benchmark", file: "docs/benchmark.md", title: "Benchmark", group: "Evidence" },
-  { slug: "evolution", file: "docs/evolution.md", title: "Governed evolution", group: "Evidence" },
+  { slug: "evolution", file: "docs/evolution.md", title: "Governed evolution", group: "Model" },
   { slug: "prior-art", file: "docs/prior-art.md", title: "Prior art", group: "Evidence" },
   { slug: "roadmap", file: "docs/roadmap.md", title: "Roadmap", group: "Evidence" },
   { slug: "jev", file: "docs/jev.md", title: "Jev chooser (optional)", group: "Extensions" },
