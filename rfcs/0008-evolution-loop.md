@@ -122,3 +122,9 @@ the correct default: nothing may be machine-edited until someone declares what m
   code?
 - How is "no signal" distinguished from "no harm" when a canary is too short, and who is
   allowed to extend it?
+
+## Which claim this advances
+
+**Code as a derived artifact** and **agents as first-class developers** both move: this is the loop that lets a machine-authored change reach production without a human deciding to trust it, and lets it be withdrawn without one either. See [the goal](../docs/regeneration.md) for the full scoreboard. The core does not
+change: this work exists to make the conversation and its identity stronger, not to add a
+second direction.
