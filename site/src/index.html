@@ -105,8 +105,9 @@ plan         <span class="c-id">sha256:016d5975…</span>
             <h3>Turn order that holds</h3>
             <p>
               An agent process and its tool services must agree on who speaks next, what
-              a retry means and when a run is finished. Colloq makes that order checkable
-              before anything is deployed.
+              a retry means and when a run is finished. Colloq compiles that order into the
+              plan both sides run. An out-of-turn call is not caught by a policy layer that
+              reads generated code. The endpoint state machine has no such edge.
             </p>
             <p class="card-foot">roles · loops · terminal states</p>
           </article>
