@@ -615,6 +615,13 @@ body.app:not(.app-doc) .doc {
   font-size: 0.96875rem;
   line-height: 1.65;
 }
+.prose p,
+.prose li {
+  /* A slash-joined run such as closed/timeout/reset has no break opportunity
+     and is wider than a phone column. break-word splits it only when it does
+     not fit, so normal prose is unaffected. */
+  overflow-wrap: break-word;
+}
 .prose p {
   margin: 0 0 0.875rem;
 }
@@ -652,6 +659,13 @@ body.app:not(.app-doc) .doc {
   background: var(--u-color_element_emphasized);
   border-radius: var(--border-radius-base);
   padding: 0.0625rem 0.3125rem;
+  /* A path or an identifier has no spaces to break at, and on a narrow screen
+     one of them is wider than the column. Inside a pre the block scrolls
+     instead, so this applies to inline code only. */
+  overflow-wrap: anywhere;
+}
+.prose pre code {
+  overflow-wrap: normal;
 }
 .prose pre {
   margin: 0 0 1.25rem;
@@ -768,24 +782,30 @@ body.app:not(.app-doc) .doc {
 /* ---- responsive ---- */
 
 @media (max-width: 62rem) {
+  /* minmax(0, 1fr), not 1fr: an auto-sized track takes the widest line in the
+     column, so a long nav label or a code block made the page scroll sideways. */
   .card-row,
   .kpi-row,
   .split,
   .footer-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
+  /* One column, so the index would otherwise fill the first screen and push
+     the article below the fold. It follows the article instead. */
   .docs-sidebar {
+    order: 2;
     position: static;
     max-height: none;
     border-right: none;
-    border-bottom: 1px solid var(--u-color_divider);
-    padding: 1rem 1.25rem;
+    border-top: 1px solid var(--u-color_divider);
+    padding: 1.75rem 1.25rem 3rem;
   }
   .doc {
-    padding: 1.5rem 1.25rem 4rem;
+    order: 1;
+    padding: 1.5rem 1.25rem 3rem;
   }
   .topnav {
     gap: 0;
@@ -884,7 +904,10 @@ body.app:not(.app-doc) .doc {
 
 @media (max-width: 62rem) {
   .compare {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .compare-col {
+    min-width: 0;
   }
   .compare-table {
     display: block;
@@ -984,4 +1007,66 @@ body.app:not(.app-doc) .doc {
   font-size: 0.9375rem;
   color: var(--u-color_text_subdued);
   line-height: 1.55;
+}
+
+/* A markdown table is often wider than a phone. It scrolls inside its own
+   box, so the page itself never moves sideways. */
+.table-scroll {
+  overflow-x: auto;
+  margin: 1.25rem 0;
+}
+.table-scroll > table {
+  margin: 0;
+}
+
+/* ---- phone ---- */
+
+@media (max-width: 40rem) {
+  /* The header does not fit on one line here, so it takes two: the brand and
+     the repository link, then the nav across the full second row. Static, not
+     sticky, because two rows of sticky header cost too much of a short screen. */
+  .topbar {
+    position: static;
+    flex-wrap: wrap;
+    height: auto;
+    gap: 0.5rem 1rem;
+    padding: 0.75rem 1rem;
+  }
+  .topbar > .button {
+    margin-left: auto;
+  }
+  .topnav {
+    order: 3;
+    width: 100%;
+    margin-right: 0;
+    flex-wrap: wrap;
+  }
+  /* 2.75rem is 44px: the smallest target a thumb hits reliably. */
+  .topnav a,
+  .side-nav a,
+  .footer-grid a {
+    display: flex;
+    align-items: center;
+    min-height: 2.75rem;
+  }
+  /* ui-core sizes a button by height, which is below a comfortable target on
+     a touch screen. min-height raises it without changing the type scale. */
+  .topbar > .button.small,
+  .button.medium {
+    min-height: 2.75rem;
+  }
+
+  .wrap {
+    width: min(var(--shell-max), 100% - 2rem);
+  }
+  .hero {
+    padding: 2.5rem 1rem 0;
+  }
+  .hero .tag {
+    text-wrap: balance;
+  }
+  .doc,
+  .docs-sidebar {
+    padding-inline: 1rem;
+  }
 }

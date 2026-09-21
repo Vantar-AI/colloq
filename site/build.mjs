@@ -111,6 +111,14 @@ function rewriteLinks(html) {
     });
 }
 
+/** A wide table has to scroll on its own, or it scrolls the whole page sideways. */
+function wrapTables(html) {
+  return html.replace(/<table>[\s\S]*?<\/table>/g, (table) => `<div class="table-scroll">${table}</div>`);
+}
+
+/** One markdown pipeline, so every page gets the same treatment. */
+const renderMarkdown = (md) => wrapTables(rewriteLinks(marked.parse(md)));
+
 /** Every internal link must resolve, or the build fails. */
 function checkLinks() {
   const pages = [];
@@ -290,7 +298,7 @@ for (const file of fs.readdirSync(path.join(repo, "spec"))) {
 const quickstart = fs.readFileSync(path.join(here, "src", "quickstart.md"), "utf8");
 for (const doc of DOCS) {
   const md = doc.file ? fs.readFileSync(path.join(repo, doc.file), "utf8") : quickstart;
-  const body = rewriteLinks(marked.parse(md));
+  const body = renderMarkdown(md);
   const firstPara = md.replace(/^#.*$/m, "").trim().split("\n\n")[0].replace(/[#*`\[\]]/g, "").slice(0, 180);
   write(
     `docs/${doc.slug}`,
@@ -352,7 +360,7 @@ for (const post of WRITING) {
       wide: true,
       body: `<article class="prose essay">
         <p class="kicker"><a href="/writing/">Writing</a> · <time datetime="${post.date}">${nice}</time></p>
-${rewriteLinks(marked.parse(md))}
+${renderMarkdown(md)}
         <p class="essay-foot">
           Colloq is an open-source language for the typed conversation between servers.
           <a href="/docs/quickstart/">Try it in ten minutes</a>, or read
@@ -400,7 +408,7 @@ write(
       description:
         "Code is cheap to produce and getting cheaper. What stayed expensive is knowing whether a new version still means the same thing. Colloq is a language built for that.",
       canonical: "https://colloq.dev/about/",
-      body: `<article class="prose">\n${rewriteLinks(marked.parse(md))}\n</article>`,
+      body: `<article class="prose">\n${renderMarkdown(md)}\n</article>`,
       nav: "",
       activeTop: "about",
       wide: true,
@@ -417,7 +425,7 @@ for (const rfc of RFCS) {
       title: `${rfc.title} — Colloq`,
       description: rfc.title,
       canonical: `https://colloq.dev/rfcs/${rfc.slug}/`,
-      body: `<article class="prose">\n${rewriteLinks(marked.parse(md))}\n<p class="edit"><a href="https://github.com/Vantar-AI/colloq/blob/main/${rfc.file}">Edit this page on GitHub</a></p>\n</article>`,
+      body: `<article class="prose">\n${renderMarkdown(md)}\n<p class="edit"><a href="https://github.com/Vantar-AI/colloq/blob/main/${rfc.file}">Edit this page on GitHub</a></p>\n</article>`,
       nav: sidebar(rfc.slug, "rfcs"),
       activeTop: "rfcs",
     }),
