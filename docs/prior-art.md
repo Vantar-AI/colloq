@@ -23,6 +23,7 @@ Colloq should reuse existing work and earn every new abstraction. No single comp
 | Application deployment | Miren | Build, placement, restart, overlay networking, and workload identity | Treat deployment as a replaceable adapter for identified Colloq endpoint plans |
 | Programmable networks | P4, eBPF | Safe specialization close to the data plane | An optional lowering target rather than the application language itself |
 | Agent protocols | MCP, A2A | Capability discovery and higher-level interoperability | Colloq targets execution and data movement inside distributed AI systems |
+| Agent execution environments | bash and the filesystem, Jupyter kernels, QuickJS code mode | Persistent state, so a model can advance a task one step at a time instead of emitting one large answer | Colloq bounds which step exists rather than inspecting a generated step before it runs |
 | Equality graphs | egg, egglog | Represent many equivalent programs and extract by cost | Separate proved/validated optimization from behavior-changing evolution |
 
 ## The proposed gap
