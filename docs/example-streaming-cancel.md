@@ -151,17 +151,59 @@ data moves. A client built from an old version and a server built from a new one
 the preface. They do not exchange half-compatible messages. See [Colloq Wire](wire.md) and
 [plans and identity](plan.md).
 
+## Where this bites in real products
+
+- **The stop button in a chat app.** The user clicks stop. The UI stops drawing, but the
+  server keeps generating and the tokens are still billed. Nothing in the schema says
+  "no token after cancel", so nothing checks it. In Colloq that rule is case 2 above.
+- **A voice agent that gets interrupted.** The caller talks over the bot. The speech service
+  must stop sending audio for the old answer and start on the new one. A late audio chunk from
+  the old answer is a correctly typed message at the wrong moment, which is case 1.
+- **Failover between model servers.** A gateway sends a prompt, the server goes quiet, the
+  gateway retries on a second server. Did the first one already stream half the answer? The
+  gateway cannot know. Colloq makes it say so (`transport.uncertain`, case 3) instead of
+  guessing, so the retry logic must handle that branch.
+- **A mobile app that updates slowly.** The server ships a new message type. Half the users
+  still run last month's app. With a schema they receive a message they do not understand. In
+  Colloq the old app and the new server refuse each other at connect time (case 4).
+
 ## A second example: an agent changes the contract
 
 This is where Colloq is heading: [software you regenerate instead of maintain](regeneration.md).
 
-Say an AI agent decides the server should answer repeated prompts from a cache. It does not
-open two repositories and patch two state machines. It edits one thing, the conversation: it
-adds a `cached` branch next to `token` and `done`. Today that edit goes through a draft
-(`draft-create`, `draft-patch`), and `draft-promote` refuses it unless the new conversation
-still validates. The promoted version gets a new plan identity, and both endpoints are derived
-again from it. A client that still runs the old plan is refused at the preface, so it cannot
-receive a `cached` message it does not understand.
+An AI agent decides the server should answer repeated prompts from a cache. It does not open
+two repositories and patch two state machines. It edits one thing, the conversation. This is a
+real run of the prototype.
+
+First the agent makes a mistake. It adds a `cached` branch that points to a state that does not
+exist:
+
+```bash
+cargo run -- draft-create examples/generate.colloqconv.json
+cargo run -- draft-patch build/generate.colloqdraft \
+  --pointer /states/1/branches/cached --value '"answer-from-cache"' --out build/bad.colloqdraft
+cargo run -- draft-promote build/bad.colloqdraft
+```
+
+```text
+Error: Validation(... code: "CLQ0016", path: "$.states[1].cached",
+  message: "target state answer-from-cache does not exist" ...)
+```
+
+The gate refuses it. Nothing is generated and nothing reaches a server. The agent fixes the edit
+so that `cached` ends the conversation, and the gate accepts it:
+
+```bash
+cargo run -- draft-patch build/generate.colloqdraft \
+  --pointer /states/1/branches/cached --value '"end"' --out build/ok.colloqdraft
+cargo run -- draft-promote build/ok.colloqdraft
+# promoted example.generate as sha256:5e5be47f... to build/promoted.colloqconv.json
+#   and build/promoted.colloqplan.json
+```
+
+The new contract has a new identity (`sha256:5e5be47f...`, was `sha256:92c198d0...`). Both
+endpoints are derived again from the new plan. A client that still runs the old plan is refused
+at the preface, so it never receives a `cached` choice it does not understand.
 
 The contract is what you keep. The endpoints are what you throw away and regenerate. What is
 not derived yet: the code that decides *when* to answer from the cache is still written by
