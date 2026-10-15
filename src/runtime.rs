@@ -1257,39 +1257,64 @@ impl Transport for QuicTransport {
         if self.finished {
             return Ok(());
         }
-        let send = &mut self.send;
-        let receive = &mut self.receive;
-        match role {
-            "client" => {
-                self.runtime
-                    .block_on(async {
-                        send.write_all(&0_u32.to_be_bytes())
-                            .await
-                            .map_err(|error| error.to_string())?;
-                        read_quic_close_marker(receive).await
-                    })
-                    .map_err(RuntimeError::Quic)?;
+        {
+            let send = &mut self.send;
+            let receive = &mut self.receive;
+            match role {
+                "client" => {
+                    self.runtime
+                        .block_on(async {
+                            send.write_all(&0_u32.to_be_bytes())
+                                .await
+                                .map_err(|error| error.to_string())?;
+                            await_close_marker(receive).await
+                        })
+                        .map_err(RuntimeError::Quic)?;
+                }
+                "server" => {
+                    self.runtime
+                        .block_on(async {
+                            await_close_marker(receive).await?;
+                            send.write_all(&0_u32.to_be_bytes())
+                                .await
+                                .map_err(|error| error.to_string())
+                        })
+                        .map_err(RuntimeError::Quic)?;
+                }
+                role => {
+                    return Err(RuntimeError::Quic(format!(
+                        "QUIC close handshake does not support role {role}"
+                    )));
+                }
             }
-            "server" => {
-                self.runtime
-                    .block_on(async {
-                        read_quic_close_marker(receive).await?;
-                        send.write_all(&0_u32.to_be_bytes())
-                            .await
-                            .map_err(|error| error.to_string())
-                    })
-                    .map_err(RuntimeError::Quic)?;
+            // Reading the peer's explicit Colloq close marker acknowledges application completion. The
+            // peer may release its one-shot endpoint immediately afterward, so publishing our FIN is
+            // best-effort and cannot invalidate an already acknowledged Colloq close handshake.
+            let _ = send.finish();
+            if role == "client" {
+                // The client has its answer, so nothing of its own is still in flight. Closing
+                // the connection here tells the server at once that the exchange is over, which
+                // is what lets the server's wait below finish in a round trip instead of a
+                // timeout. Dropping the endpoint silently would leave the server waiting.
+                self.connection
+                    .close(quinn::VarInt::from_u32(0), b"colloq close");
             }
-            role => {
-                return Err(RuntimeError::Quic(format!(
-                    "QUIC close handshake does not support role {role}"
-                )));
+            if role == "server" {
+                // write_all() only queues bytes on the stream; the endpoint driver puts them on
+                // the wire. The server answers last, so returning here would drop the runtime and
+                // the endpoint with the close marker still queued. The client would then wait for
+                // bytes that were never sent and learn only when the idle timeout expires.
+                //
+                // After finish(), stopped() resolves once the peer has acknowledged the stream.
+                // The wait is insurance, not the delivery proof, so it is short: the client has
+                // already read the marker by the time it answers, and a loopback flush needs
+                // microseconds. The bound only has to outlast a scheduling hiccup.
+                let acknowledged = send.stopped();
+                let _ = self.runtime.block_on(async {
+                    tokio::time::timeout(CLOSE_DRAIN_TIMEOUT, acknowledged).await
+                });
             }
         }
-        // Reading the peer's explicit Colloq close marker acknowledges application completion. The
-        // peer may release its one-shot endpoint immediately afterward, so publishing our FIN is
-        // best-effort and cannot invalidate an already acknowledged Colloq close handshake.
-        let _ = send.finish();
         self.finished = true;
         Ok(())
     }
@@ -1299,9 +1324,26 @@ impl Transport for QuicTransport {
             .close(quinn::VarInt::from_u32(1), b"colloq typed failure");
         // close() only queues the frame. Waiting for the endpoint to go idle lets
         // it leave the host before the runtime drops, so the peer fails at once
-        // instead of waiting out the idle timeout.
+        // instead of waiting out the idle timeout. Bounded, because a peer that
+        // never goes idle must not turn a typed failure into a hang.
         let endpoint = self._endpoint.clone();
-        self.runtime.block_on(endpoint.wait_idle());
+        let _ = self.runtime.block_on(async {
+            tokio::time::timeout(CLOSE_DRAIN_TIMEOUT, endpoint.wait_idle()).await
+        });
+    }
+}
+
+/// The close handshake waits for one peer message. Bounded, so a peer that has gone away
+/// fails in seconds with a clear error instead of stalling until the idle timeout.
+const CLOSE_HANDSHAKE_TIMEOUT: Duration = Duration::from_secs(10);
+
+/// How long the answering side waits for its own close marker to be acknowledged.
+const CLOSE_DRAIN_TIMEOUT: Duration = Duration::from_millis(500);
+
+async fn await_close_marker(receive: &mut quinn::RecvStream) -> Result<(), String> {
+    match tokio::time::timeout(CLOSE_HANDSHAKE_TIMEOUT, read_quic_close_marker(receive)).await {
+        Ok(result) => result,
+        Err(_) => Err("peer did not answer the Colloq QUIC close handshake".to_string()),
     }
 }
 
@@ -1327,10 +1369,10 @@ async fn read_quic_close_marker(receive: &mut quinn::RecvStream) -> Result<(), S
 fn quic_transport_config() -> Result<Arc<quinn::TransportConfig>, RuntimeError> {
     let mut config = quinn::TransportConfig::default();
     config.keep_alive_interval(Some(Duration::from_secs(1)));
-    // 10 minutes. A starved CI runner can leave one side unscheduled for minutes,
-    // and a dead peer is still caught: the job timeout is shorter than this.
+    // 30 seconds. The close handshake is bounded on both sides now, so this no longer
+    // has to cover a stalled teardown; it only has to outlast a scheduling hiccup.
     config.max_idle_timeout(Some(
-        quinn::IdleTimeout::try_from(Duration::from_secs(600))
+        quinn::IdleTimeout::try_from(Duration::from_secs(30))
             .map_err(|error| RuntimeError::Quic(error.to_string()))?,
     ));
     Ok(Arc::new(config))
