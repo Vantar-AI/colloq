@@ -16,6 +16,7 @@ const DOCS = [
   { slug: "vision", file: "docs/vision.md", title: "Vision", group: "Start" },
   { slug: "regeneration", file: "docs/regeneration.md", title: "The goal, and where we stand", group: "Start" },
   { slug: "conversations", file: "docs/language.md", title: "The language surface", group: "Start" },
+  { slug: "example-streaming-cancel", file: "docs/example-streaming-cancel.md", title: "Worked example: regenerating both ends", group: "Start" },
   { slug: "architecture", file: "docs/architecture.md", title: "Architecture", group: "Model" },
   { slug: "design", file: "docs/design.md", title: "Design principles", group: "Model" },
   { slug: "plan", file: "docs/plan.md", title: "Plans and identity", group: "Model" },
