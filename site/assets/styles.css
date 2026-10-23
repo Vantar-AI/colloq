@@ -172,6 +172,16 @@ a {
   letter-spacing: -0.035em;
   color: #fff;
   margin: 0 0 1.125rem;
+  text-wrap: balance;
+}
+.hero-h1-sub {
+  display: block;
+  max-width: 40rem;
+  margin: 0.9rem auto 0;
+  font-size: clamp(1.35rem, 2.6vw, 2rem);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
 }
 .hero-sub {
   max-width: 46rem;
