@@ -172,6 +172,7 @@ a {
   letter-spacing: -0.035em;
   color: #fff;
   margin: 0 0 1.125rem;
+  text-wrap: balance;
 }
 .hero-sub {
   max-width: 46rem;

@@ -5,7 +5,7 @@ assumption is now wrong. Code is cheap to produce and getting cheaper. What stay
 expensive is knowing whether a new version still means the same thing as the old one,
 and whether the other side of the network agrees.
 
-Colloq is a language built for that world.
+Colloq is a language for regenerative software, built for that world: the meaning stays fixed, and the code under it is regenerated.
 
 ## Durable meaning, disposable implementation
 
