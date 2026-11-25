@@ -1,6 +1,6 @@
 # Contributing to Colloq
 
-Colloq is currently a documentation-first research project. Contributions should make the thesis more precise, more testable, or easier to falsify.
+Colloq is a research project with a working Rust implementation. Contributions should make the thesis more precise, more testable, or easier to falsify.
 
 ## Useful contributions
 
@@ -55,7 +55,29 @@ an RFC. A pull request that makes a performance claim needs a report, not a sent
 
 ## Development
 
-There is no compiler toolchain yet. Until code is introduced, verify that Markdown links are valid, examples carry their experimental status, and design documents remain consistent with the principles in `docs/design.md`.
+Colloq is a Rust crate (edition 2024, minimum Rust 1.91). The `colloq` binary compiles
+conversations, bootstraps nodes and runs the benchmarks.
+
+```sh
+cargo build --locked
+cargo test --locked --all-features
+cargo clippy --locked --all-targets --all-features -- -D warnings
+cargo fmt --check
+```
+
+These are the checks CI runs on every pull request. Run them before you push.
+
+Two further CI jobs are worth running locally when you touch their area:
+
+- **Schemas and examples.** Install `check-jsonschema` (`pip install check-jsonschema==0.37.4`)
+  and run the commands in the `schemas` job of `.github/workflows/ci.yml`.
+- **Two-node smoke test.** `scripts/two-node-smoke.sh` after `cargo build --locked`. It needs `jq`.
+
+New here? Start with an issue labelled
+[good first issue](https://github.com/Vantar-AI/colloq/labels/good%20first%20issue).
+
+Documentation changes still follow the style rules above: examples carry their experimental
+status, and design documents stay consistent with `docs/design.md`.
 
 ## License
 
